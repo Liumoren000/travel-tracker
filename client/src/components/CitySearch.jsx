@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Input, AutoComplete, Button, message, Modal, Radio } from 'antd';
+import { Input, AutoComplete, Modal, Radio } from 'antd';
 import { SearchOutlined, CarOutlined, GlobalOutlined } from '@ant-design/icons';
 import axios from 'axios';
+import { CITIES_DATABASE } from '../data/citiesDatabase';
 
 const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001/api';
 
@@ -13,6 +14,30 @@ const CitySearch = ({ onAddCity, isFirst }) => {
   const [selectedCity, setSelectedCity] = useState(null);
   const [selectedMode, setSelectedMode] = useState('driving');
 
+  // 本地搜索函数
+  const searchLocal = (query) => {
+    const q = query.toLowerCase();
+    return CITIES_DATABASE
+      .filter(city => 
+        city.name.toLowerCase().includes(q) || 
+        city.nameEn.toLowerCase().includes(q)
+      )
+      .slice(0, 10)
+      .map(city => ({
+        value: city.name,
+        label: (
+          <div className="search-option">
+            <span>{city.name} ({city.nameEn}) - {city.country}</span>
+          </div>
+        ),
+        data: {
+          name: city.name,
+          lat: city.lat,
+          lng: city.lng
+        }
+      }));
+  };
+
   const searchCity = async (value) => {
     if (!value || value.length < 1) {
       setOptions([]);
@@ -20,9 +45,20 @@ const CitySearch = ({ onAddCity, isFirst }) => {
     }
 
     setLoading(true);
+    
+    // 首先尝试本地搜索
+    const localResults = searchLocal(value);
+    if (localResults.length > 0) {
+      setOptions(localResults);
+      setLoading(false);
+      return;
+    }
+
+    // 如果本地没有结果，尝试 API 搜索
     try {
       const response = await axios.get(
-        `${API_BASE}/geocoding/search?q=${encodeURIComponent(value)}`
+        `${API_BASE}/geocoding/search?q=${encodeURIComponent(value)}`,
+        { timeout: 3000 }
       );
 
       const cities = response.data.map(item => ({
@@ -41,8 +77,9 @@ const CitySearch = ({ onAddCity, isFirst }) => {
 
       setOptions(cities);
     } catch (error) {
-      console.error('搜索城市失败:', error);
-      message.error('搜索城市失败，请重试');
+      console.warn('API 搜索失败，使用本地结果:', error.message);
+      // API 失败时使用本地结果
+      setOptions(localResults);
     } finally {
       setLoading(false);
     }
