@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Tag, Spin } from 'antd';
-import { GlobalOutlined, EnvironmentOutlined, DownOutlined, UpOutlined } from '@ant-design/icons';
+import { GlobalOutlined, EnvironmentOutlined, DownOutlined, UpOutlined, AimOutlined } from '@ant-design/icons';
+import { calculateTotalDistance, formatDistance } from '../utils/distance';
 
 const COUNTRY_FLAGS = {
   'CN': '🇨🇳', 'JP': '🇯🇵', 'KR': '🇰🇷', 'TH': '🇹🇭', 'SG': '🇸🇬',
@@ -19,8 +20,12 @@ function getFlag(countryCode) {
   return COUNTRY_FLAGS[countryCode] || '🌍';
 }
 
-export default function Statistics({ stats, loading }) {
+export default function Statistics({ stats, loading, routes }) {
   const [expanded, setExpanded] = useState(false);
+  
+  // 计算总距离
+  const totalDistance = routes ? calculateTotalDistance(routes) : 0;
+  const formattedDistance = formatDistance(totalDistance);
 
   if (stats.cityCount === 0) {
     return null;
@@ -38,6 +43,14 @@ export default function Statistics({ stats, loading }) {
             <span className="statistics-item">
               <EnvironmentOutlined /> {stats.cityCount} 个城市
             </span>
+            {totalDistance > 0 && (
+              <>
+                <span className="statistics-divider">/</span>
+                <span className="statistics-item">
+                  <AimOutlined /> {formattedDistance}
+                </span>
+              </>
+            )}
           </Spin>
         </div>
         <div className="statistics-toggle">

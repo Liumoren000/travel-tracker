@@ -1,8 +1,32 @@
 import { useEffect, useRef, useState } from 'react';
-import { Button, message } from 'antd';
-import { DownloadOutlined, EnvironmentOutlined, MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
+import { Button, message, Dropdown, Space } from 'antd';
+import { DownloadOutlined, EnvironmentOutlined, MenuFoldOutlined, MenuUnfoldOutlined, MapOutlined } from '@ant-design/icons';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+
+// 地图样式配置
+const MAP_STYLES = {
+  standard: {
+    name: '标准',
+    url: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+  },
+  satellite: {
+    name: '卫星',
+    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+    attribution: '&copy; Esri'
+  },
+  terrain: {
+    name: '地形',
+    url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+    attribution: '&copy; <a href="https://opentopomap.org">OpenTopoMap</a>'
+  },
+  dark: {
+    name: '暗色',
+    url: 'https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png',
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/">CARTO</a>'
+  }
+};
 
 const Map = ({ 
   routes = [], 
@@ -18,15 +42,36 @@ const Map = ({
   const mapInstanceRef = useRef(null);
   const layersRef = useRef([]);
   const clickHandlerRef = useRef(null);
+  const tileLayerRef = useRef(null);
   const [exporting, setExporting] = useState(false);
+  const [mapStyle, setMapStyle] = useState('standard');
+
+  // 切换地图样式
+  const changeMapStyle = (styleKey) => {
+    if (!mapInstanceRef.current || !tileLayerRef.current) return;
+    
+    const style = MAP_STYLES[styleKey];
+    if (!style) return;
+
+    // 移除旧图层
+    mapInstanceRef.current.removeLayer(tileLayerRef.current);
+    
+    // 添加新图层
+    tileLayerRef.current = L.tileLayer(style.url, {
+      attribution: style.attribution
+    }).addTo(mapInstanceRef.current);
+    
+    setMapStyle(styleKey);
+    message.success(`已切换到${style.name}地图`);
+  };
 
   useEffect(() => {
     if (mapInstanceRef.current || !mapRef.current) return;
 
     mapInstanceRef.current = L.map(mapRef.current).setView([35.8617, 104.1954], 4);
 
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    tileLayerRef.current = L.tileLayer(MAP_STYLES.standard.url, {
+      attribution: MAP_STYLES.standard.attribution
     }).addTo(mapInstanceRef.current);
 
     // 监听容器大小变化，更新地图
@@ -433,18 +478,35 @@ const Map = ({
 
   const hasRoutes = routes.length > 0 || currentRoute;
 
+  // 地图样式切换菜单
+  const mapStyleMenuItems = Object.entries(MAP_STYLES).map(([key, style]) => ({
+    key: key,
+    label: (
+      <Space>
+        <span style={{ fontWeight: mapStyle === key ? 'bold' : 'normal' }}>
+          {style.name}
+        </span>
+        {mapStyle === key && <span>✓</span>}
+      </Space>
+    ),
+    onClick: () => changeMapStyle(key)
+  }));
+
   return (
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       <div ref={mapRef} className="map-container" />
       
-      {/* 左下角：侧边栏切换按钮 */}
-      {onToggleSider && (
-        <div style={{
-          position: 'absolute',
-          bottom: '80px',
-          left: '10px',
-          zIndex: 1000
-        }}>
+      {/* 左下角：侧边栏切换按钮和地图样式切换 */}
+      <div style={{
+        position: 'absolute',
+        bottom: '80px',
+        left: '10px',
+        zIndex: 1000,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '8px'
+      }}>
+        {onToggleSider && (
           <Button
             icon={siderCollapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
             onClick={onToggleSider}
@@ -459,8 +521,28 @@ const Map = ({
               justifyContent: 'center'
             }}
           />
-        </div>
-      )}
+        )}
+        <Dropdown
+          menu={{ items: mapStyleMenuItems }}
+          placement="topLeft"
+          trigger={['click']}
+        >
+          <Button
+            icon={<MapOutlined />}
+            style={{
+              background: 'rgba(255, 255, 255, 0.95)',
+              border: '1px solid #d9d9d9',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+              width: '36px',
+              height: '36px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+            title="切换地图样式"
+          />
+        </Dropdown>
+      </div>
 
       {/* 右上角：导出按钮 */}
       <div style={{

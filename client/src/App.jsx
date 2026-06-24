@@ -1,6 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
-import { Layout, message, Modal, Input, Button, Tag, List, Popconfirm, AutoComplete, Radio } from 'antd';
-import { EnvironmentOutlined, DeleteOutlined, ClearOutlined, EyeOutlined, PlusOutlined, EditOutlined, SaveOutlined, CloseOutlined, SearchOutlined, ArrowUpOutlined, ArrowDownOutlined, CarOutlined, GlobalOutlined, MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Layout, message, Modal, Input, Button, Tag, List, Popconfirm, AutoComplete, Radio, Space } from 'antd';
+import { EnvironmentOutlined, DeleteOutlined, ClearOutlined, EyeOutlined, PlusOutlined, EditOutlined, SaveOutlined, CloseOutlined, SearchOutlined, ArrowUpOutlined, ArrowDownOutlined, CarOutlined, GlobalOutlined, MenuFoldOutlined, MenuUnfoldOutlined, UploadOutlined, DownloadOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import Map from './components/Map';
 import CitySearch from './components/CitySearch';
@@ -8,6 +8,7 @@ import RouteList from './components/RouteList';
 import History from './components/History';
 import Statistics from './components/Statistics';
 import { useStatistics } from './hooks/useStatistics';
+import { downloadGPX, importGPXFile } from './utils/gpx';
 import './App.css';
 
 const { Sider, Content } = Layout;
@@ -93,6 +94,7 @@ function App() {
   const [editSearchLoading, setEditSearchLoading] = useState(false);
   const [transportMode, setTransportMode] = useState('driving');
   const [siderCollapsed, setSiderCollapsed] = useState(false);
+  const fileInputRef = useRef(null);
 
   useEffect(() => {
     saveRoutesToStorage(routes);
@@ -505,6 +507,52 @@ function App() {
     }
   };
 
+  // 导出 GPX 文件
+  const handleExportGPX = () => {
+    if (routes.length === 0) {
+      message.warning('没有可导出的路线');
+      return;
+    }
+    try {
+      downloadGPX(routes);
+      message.success('GPX 文件导出成功');
+    } catch (error) {
+      console.error('导出 GPX 失败:', error);
+      message.error('导出 GPX 失败，请重试');
+    }
+  };
+
+  // 导入 GPX 文件
+  const handleImportGPX = async (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    try {
+      const importedRoutes = await importGPXFile(file);
+      if (importedRoutes.length === 0) {
+        message.warning('GPX 文件中没有找到有效路线');
+        return;
+      }
+
+      // 为导入的路线添加颜色
+      const coloredRoutes = importedRoutes.map((route, index) => ({
+        ...route,
+        color: ROUTE_COLORS[(routes.length + index) % ROUTE_COLORS.length]
+      }));
+
+      setRoutes(prev => [...prev, ...coloredRoutes]);
+      message.success(`成功导入 ${importedRoutes.length} 条路线`);
+    } catch (error) {
+      console.error('导入 GPX 失败:', error);
+      message.error('导入 GPX 失败：' + error.message);
+    }
+
+    // 清空文件输入
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
   const handleEditSearch = async (value) => {
     if (!value || value.length < 1) {
       setEditSearchOptions([]);
@@ -600,10 +648,25 @@ function App() {
             <div className="map-routes">
               <div className="map-routes-header">
                 <h3>地图线路 ({routes.length})</h3>
-                <Popconfirm title="确定清除所有线路？" onConfirm={handleClearRoutes}>
-                  <Button size="small" icon={<ClearOutlined />}>清除</Button>
-                </Popconfirm>
+                <Space size="small">
+                  <Button size="small" icon={<UploadOutlined />} onClick={() => fileInputRef.current?.click()}>
+                    导入
+                  </Button>
+                  <Button size="small" icon={<DownloadOutlined />} onClick={handleExportGPX}>
+                    导出
+                  </Button>
+                  <Popconfirm title="确定清除所有线路？" onConfirm={handleClearRoutes}>
+                    <Button size="small" icon={<ClearOutlined />}>清除</Button>
+                  </Popconfirm>
+                </Space>
               </div>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".gpx"
+                style={{ display: 'none' }}
+                onChange={handleImportGPX}
+              />
               <List
                 size="small"
                 dataSource={routes}
@@ -652,7 +715,7 @@ function App() {
       </Sider>
 
       <Content className="app-content">
-        <Statistics stats={stats} loading={statsLoading} />
+        <Statistics stats={stats} loading={statsLoading} routes={routes} />
         <Map 
           routes={routes} 
           currentRoute={currentRoute} 
