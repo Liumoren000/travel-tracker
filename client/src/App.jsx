@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Layout, message, Modal, Input, Button, Tag, List, Popconfirm, AutoComplete, Radio } from 'antd';
-import { EnvironmentOutlined, DeleteOutlined, ClearOutlined, EyeOutlined, PlusOutlined, EditOutlined, SaveOutlined, CloseOutlined, SearchOutlined, ArrowUpOutlined, ArrowDownOutlined, CarOutlined, GlobalOutlined } from '@ant-design/icons';
+import { EnvironmentOutlined, DeleteOutlined, ClearOutlined, EyeOutlined, PlusOutlined, EditOutlined, SaveOutlined, CloseOutlined, SearchOutlined, ArrowUpOutlined, ArrowDownOutlined, CarOutlined, GlobalOutlined, MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import Map from './components/Map';
 import CitySearch from './components/CitySearch';
@@ -92,6 +92,7 @@ function App() {
   const [editSearchOptions, setEditSearchOptions] = useState([]);
   const [editSearchLoading, setEditSearchLoading] = useState(false);
   const [transportMode, setTransportMode] = useState('driving');
+  const [siderCollapsed, setSiderCollapsed] = useState(false);
 
   useEffect(() => {
     saveRoutesToStorage(routes);
@@ -551,7 +552,15 @@ function App() {
 
   return (
     <Layout className="app-layout">
-      <Sider width={380} className="app-sider">
+      <Sider 
+        width={380} 
+        collapsedWidth={0}
+        collapsed={siderCollapsed}
+        onCollapse={setSiderCollapsed}
+        collapsible
+        trigger={null}
+        className="app-sider"
+      >
         <div className="sider-content">
           <div className="app-title">
             <EnvironmentOutlined />
@@ -639,6 +648,11 @@ function App() {
       </Sider>
 
       <Content className="app-content">
+        <Button
+          className="sider-toggle-btn"
+          icon={siderCollapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+          onClick={() => setSiderCollapsed(!siderCollapsed)}
+        />
         <Statistics stats={stats} loading={statsLoading} />
         <Map 
           routes={routes} 

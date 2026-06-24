@@ -431,3 +431,37 @@ body {
   margin: 0;
   font-size: 12px;
 }
+
+/* Sider Toggle Button */
+.sider-toggle-btn {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #d9d9d9;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+}
+
+.sider-toggle-btn:hover {
+  background: #fff;
+  border-color: #1890ff;
+  color: #1890ff;
+}
+
+/* Sider collapsed animation */
+.app-sider {
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.app-sider.ant-layout-sider-collapsed {
+  min-width: 0 !important;
+  width: 0 !important;
+}
