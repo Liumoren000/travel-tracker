@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button, message, Dropdown, Space } from 'antd';
-import { DownloadOutlined, EnvironmentOutlined, MenuFoldOutlined, MenuUnfoldOutlined, MapOutlined } from '@ant-design/icons';
+import { DownloadOutlined, EnvironmentOutlined, MenuFoldOutlined, MenuUnfoldOutlined, GlobalOutlined } from '@ant-design/icons';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -528,7 +528,7 @@ const Map = ({
           trigger={['click']}
         >
           <Button
-            icon={<MapOutlined />}
+            icon={<GlobalOutlined />}
             style={{
               background: 'rgba(255, 255, 255, 0.95)',
               border: '1px solid #d9d9d9',
