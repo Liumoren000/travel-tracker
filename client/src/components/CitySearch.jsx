@@ -4,8 +4,6 @@ import { SearchOutlined, CarOutlined, GlobalOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { CITIES_DATABASE } from '../data/citiesDatabase';
 
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001/api';
-
 const CitySearch = ({ onAddCity, isFirst }) => {
   const [searchText, setSearchText] = useState('');
   const [options, setOptions] = useState([]);
@@ -38,6 +36,38 @@ const CitySearch = ({ onAddCity, isFirst }) => {
       }));
   };
 
+  // Nominatim API 搜索
+  const searchNominatim = async (query) => {
+    try {
+      const response = await axios.get(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=10&accept-language=zh`,
+        { 
+          timeout: 5000,
+          headers: {
+            'User-Agent': 'TravelTracker/1.0'
+          }
+        }
+      );
+
+      return response.data.map(item => ({
+        value: item.display_name.split(',')[0],
+        label: (
+          <div className="search-option">
+            <span>{item.display_name.split(',').slice(0, 2).join(',')}</span>
+          </div>
+        ),
+        data: {
+          name: item.display_name.split(',')[0],
+          lat: parseFloat(item.lat),
+          lng: parseFloat(item.lon)
+        }
+      }));
+    } catch (error) {
+      console.warn('Nominatim 搜索失败:', error.message);
+      return [];
+    }
+  };
+
   const searchCity = async (value) => {
     if (!value || value.length < 1) {
       setOptions([]);
@@ -48,41 +78,23 @@ const CitySearch = ({ onAddCity, isFirst }) => {
     
     // 首先尝试本地搜索
     const localResults = searchLocal(value);
-    if (localResults.length > 0) {
-      setOptions(localResults);
-      setLoading(false);
-      return;
+    
+    // 同时发起 Nominatim 搜索
+    const nominatimResults = await searchNominatim(value);
+    
+    // 合并结果，本地结果优先
+    const allResults = [...localResults];
+    const existingNames = new Set(localResults.map(r => r.value));
+    
+    for (const result of nominatimResults) {
+      if (!existingNames.has(result.value) && allResults.length < 15) {
+        allResults.push(result);
+        existingNames.add(result.value);
+      }
     }
 
-    // 如果本地没有结果，尝试 API 搜索
-    try {
-      const response = await axios.get(
-        `${API_BASE}/geocoding/search?q=${encodeURIComponent(value)}`,
-        { timeout: 3000 }
-      );
-
-      const cities = response.data.map(item => ({
-        value: item.name,
-        label: (
-          <div className="search-option">
-            <span>{item.display_name}</span>
-          </div>
-        ),
-        data: {
-          name: item.name,
-          lat: parseFloat(item.lat),
-          lng: parseFloat(item.lon)
-        }
-      }));
-
-      setOptions(cities);
-    } catch (error) {
-      console.warn('API 搜索失败，使用本地结果:', error.message);
-      // API 失败时使用本地结果
-      setOptions(localResults);
-    } finally {
-      setLoading(false);
-    }
+    setOptions(allResults);
+    setLoading(false);
   };
 
   const handleSelect = (value, option) => {
