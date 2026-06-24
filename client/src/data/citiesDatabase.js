@@ -566,4 +566,6 @@ export function getDatabaseStats() {
   };
 }
 
+// 导出数据库
+export { CITIES_DATABASE };
 export default CITIES_DATABASE;
