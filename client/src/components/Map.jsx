@@ -29,7 +29,20 @@ const Map = ({
       attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
     }).addTo(mapInstanceRef.current);
 
+    // 监听容器大小变化，更新地图
+    const resizeObserver = new ResizeObserver(() => {
+      if (mapInstanceRef.current) {
+        setTimeout(() => {
+          if (mapInstanceRef.current) {
+            mapInstanceRef.current.invalidateSize();
+          }
+        }, 300);
+      }
+    });
+    resizeObserver.observe(mapRef.current);
+
     return () => {
+      resizeObserver.disconnect();
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
@@ -424,11 +437,11 @@ const Map = ({
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       <div ref={mapRef} className="map-container" />
       
-      {/* 左上角：侧边栏切换按钮 */}
+      {/* 左下角：侧边栏切换按钮 */}
       {onToggleSider && (
         <div style={{
           position: 'absolute',
-          top: '10px',
+          bottom: '80px',
           left: '10px',
           zIndex: 1000
         }}>

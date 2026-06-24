@@ -492,6 +492,10 @@ function App() {
     setAddMode(false);
   };
 
+  const toggleSider = useCallback(() => {
+    setSiderCollapsed(prev => !prev);
+  }, []);
+
   const toggleAddMode = () => {
     setAddMode(prev => !prev);
     if (addMode) {
@@ -657,7 +661,7 @@ function App() {
           onMapClick={handleMapClick}
           onDeleteCity={handleDeleteCityFromMap}
           siderCollapsed={siderCollapsed}
-          onToggleSider={() => setSiderCollapsed(!siderCollapsed)}
+          onToggleSider={toggleSider}
         />
       </Content>
 

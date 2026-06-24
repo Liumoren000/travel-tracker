@@ -431,14 +431,3 @@ body {
   margin: 0;
   font-size: 12px;
 }
-
-/* Sider collapsed animation */
-.app-sider {
-  transition: all 0.2s ease;
-  overflow: hidden;
-}
-
-.app-sider.ant-layout-sider-collapsed {
-  min-width: 0 !important;
-  width: 0 !important;
-}
