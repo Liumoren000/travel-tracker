@@ -3,6 +3,7 @@ import { Button, message, Dropdown, Space } from 'antd';
 import { DownloadOutlined, EnvironmentOutlined, MenuFoldOutlined, MenuUnfoldOutlined, GlobalOutlined } from '@ant-design/icons';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { calculateRouteDistance, formatDistance, calculateSegmentDistances } from '../utils/distance';
 
 // 地图样式配置
 const MAP_STYLES = {
@@ -181,9 +182,16 @@ const Map = ({
         });
 
         if (Array.isArray(route.coordinates) && route.coordinates.length > 0) {
+          // 计算路线距离
+          const routeDistance = calculateRouteDistance(route.cities);
+          const formattedRouteDistance = formatDistance(routeDistance);
+          
           // Check if route has segments with different modes
           if (Array.isArray(route.segments) && route.segments.length > 0) {
-            route.segments.forEach((segment) => {
+            // 计算各段距离
+            const segmentDistances = calculateSegmentDistances(route.cities);
+            
+            route.segments.forEach((segment, segIndex) => {
               const isFlight = segment.mode === 'flight';
               const segPolyline = L.polyline(segment.coordinates, {
                 color: color,
@@ -193,10 +201,13 @@ const Map = ({
               }).addTo(mapInstanceRef.current);
 
               const modeLabel = isFlight ? '✈️ 飞行' : segment.mode === 'walking' ? '🚶 步行' : '🚗 驾车';
+              const segDistance = segmentDistances[segIndex] ? segmentDistances[segIndex].formatted : '';
+              
               segPolyline.bindPopup(`
-                <div style="min-width:150px">
+                <div style="min-width:180px">
                   <div style="font-weight:bold;font-size:14px;color:${color}">${segment.from} → ${segment.to}</div>
                   <div style="font-size:12px;color:#999;margin-top:2px">${modeLabel}</div>
+                  <div style="font-size:12px;color:#666;margin-top:4px">距离: ${segDistance}</div>
                 </div>
               `);
               layersRef.current.push(segPolyline);
@@ -213,9 +224,10 @@ const Map = ({
 
             const modeLabel = isFlight ? '✈️ 飞行' : route.mode === 'walking' ? '🚶 步行' : '🚗 驾车';
             polyline.bindPopup(`
-              <div style="min-width:150px">
+              <div style="min-width:180px">
                 <div style="font-weight:bold;font-size:14px;color:${color}">${routeName}</div>
                 <div style="font-size:12px;color:#999;margin-top:2px">${modeLabel}</div>
+                <div style="font-size:12px;color:#666;margin-top:4px">总距离: ${formattedRouteDistance}</div>
                 <div style="font-size:12px;color:#666;margin-top:5px">
                   ${route.cities.map(c => c.name).join(' → ')}
                 </div>

@@ -332,66 +332,67 @@ body {
   transform: translateX(-50%);
   z-index: 1000;
   background: rgba(255, 255, 255, 0.95);
-  border-radius: 8px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   backdrop-filter: blur(8px);
   max-width: 90%;
-  min-width: 280px;
+  min-width: 200px;
+  transition: box-shadow 0.2s;
+}
+
+.statistics-container:hover {
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
 }
 
 .statistics-summary {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 10px 16px;
-  cursor: pointer;
+  padding: 6px 10px;
   user-select: none;
-}
-
-.statistics-summary:hover {
-  background: rgba(0, 0, 0, 0.02);
-  border-radius: 8px;
 }
 
 .statistics-numbers {
   display: flex;
   align-items: center;
-  gap: 4px;
+  gap: 2px;
+  flex: 1;
 }
 
-.statistics-item {
+.statistics-item-sm {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 14px;
+  gap: 3px;
+  font-size: 12px;
   font-weight: 500;
   color: #333;
 }
 
-.statistics-item .anticon {
+.statistics-item-sm .anticon {
   color: #1890ff;
+  font-size: 11px;
 }
 
 .statistics-divider {
   color: #d9d9d9;
-  margin: 0 4px;
+  margin: 0 2px;
+  font-size: 10px;
 }
 
 .statistics-toggle {
   color: #999;
-  font-size: 12px;
-  margin-left: 8px;
+  font-size: 10px;
+  margin-left: 4px;
 }
 
 .statistics-detail {
-  padding: 0 16px 12px;
+  padding: 0 10px 8px;
   border-top: 1px solid #f0f0f0;
-  max-height: 300px;
+  max-height: 250px;
   overflow-y: auto;
 }
 
 .statistics-country {
-  padding: 10px 0;
+  padding: 6px 0;
   border-bottom: 1px solid #f5f5f5;
 }
 
@@ -402,32 +403,33 @@ body {
 .statistics-country-header {
   display: flex;
   align-items: center;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 6px;
+  margin-bottom: 4px;
 }
 
 .statistics-country-flag {
-  font-size: 18px;
+  font-size: 14px;
 }
 
 .statistics-country-name {
   font-weight: 500;
-  font-size: 14px;
+  font-size: 12px;
   color: #333;
 }
 
 .statistics-country-count {
   margin-left: auto;
+  font-size: 11px;
 }
 
 .statistics-cities {
   display: flex;
   flex-wrap: wrap;
-  gap: 6px;
-  padding-left: 26px;
+  gap: 4px;
+  padding-left: 20px;
 }
 
 .statistics-city-tag {
   margin: 0;
-  font-size: 12px;
+  font-size: 11px;
 }
