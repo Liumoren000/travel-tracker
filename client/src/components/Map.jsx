@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { Button, message } from 'antd';
-import { DownloadOutlined, EnvironmentOutlined } from '@ant-design/icons';
+import { DownloadOutlined, EnvironmentOutlined, MenuFoldOutlined, MenuUnfoldOutlined } from '@ant-design/icons';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -10,7 +10,9 @@ const Map = ({
   selectedRouteIndex = null,
   addMode = false,
   onMapClick,
-  onDeleteCity
+  onDeleteCity,
+  siderCollapsed = false,
+  onToggleSider
 }) => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -422,6 +424,32 @@ const Map = ({
     <div style={{ position: 'relative', width: '100%', height: '100%' }}>
       <div ref={mapRef} className="map-container" />
       
+      {/* 左上角：侧边栏切换按钮 */}
+      {onToggleSider && (
+        <div style={{
+          position: 'absolute',
+          top: '10px',
+          left: '10px',
+          zIndex: 1000
+        }}>
+          <Button
+            icon={siderCollapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+            onClick={onToggleSider}
+            style={{
+              background: 'rgba(255, 255, 255, 0.95)',
+              border: '1px solid #d9d9d9',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+              width: '36px',
+              height: '36px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}
+          />
+        </div>
+      )}
+
+      {/* 右上角：导出按钮 */}
       <div style={{
         position: 'absolute',
         top: '10px',

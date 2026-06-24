@@ -648,11 +648,6 @@ function App() {
       </Sider>
 
       <Content className="app-content">
-        <Button
-          className="sider-toggle-btn"
-          icon={siderCollapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
-          onClick={() => setSiderCollapsed(!siderCollapsed)}
-        />
         <Statistics stats={stats} loading={statsLoading} />
         <Map 
           routes={routes} 
@@ -661,6 +656,8 @@ function App() {
           addMode={addMode}
           onMapClick={handleMapClick}
           onDeleteCity={handleDeleteCityFromMap}
+          siderCollapsed={siderCollapsed}
+          onToggleSider={() => setSiderCollapsed(!siderCollapsed)}
         />
       </Content>
 
