@@ -9,6 +9,7 @@ import History from './components/History';
 import Statistics from './components/Statistics';
 import { useStatistics } from './hooks/useStatistics';
 import { downloadGPX, importGPXFile } from './utils/gpx';
+import { CITIES_DATABASE } from './data/citiesDatabase';
 import './App.css';
 
 const { Sider, Content } = Layout;
@@ -646,28 +647,71 @@ function App() {
     }
 
     setEditSearchLoading(true);
-    try {
-      const response = await axios.get(
-        `${API_BASE}/geocoding/search?q=${encodeURIComponent(value)}`
-      );
-
-      const cities = response.data.map(item => ({
-        value: item.name,
+    
+    // 本地搜索
+    const localResults = CITIES_DATABASE
+      .filter(city => {
+        const q = value.toLowerCase();
+        return city.name.toLowerCase().includes(q) || 
+               city.nameEn.toLowerCase().includes(q);
+      })
+      .slice(0, 8)
+      .map(city => ({
+        value: city.name,
         label: (
           <div className="search-option">
-            <span>{item.display_name}</span>
+            <span>{city.name} ({city.nameEn}) - {city.country}</span>
           </div>
         ),
         data: {
-          name: item.name,
+          name: city.name,
+          lat: city.lat,
+          lng: city.lng
+        }
+      }));
+
+    // 显示本地结果
+    setEditSearchOptions(localResults);
+
+    // 同时调用 Nominatim API
+    try {
+      const response = await axios.get(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(value)}&limit=10&accept-language=zh`,
+        { 
+          timeout: 5000,
+          headers: { 'User-Agent': 'TravelTracker/1.0' }
+        }
+      );
+
+      const apiResults = response.data.map(item => ({
+        value: item.display_name.split(',')[0],
+        label: (
+          <div className="search-option">
+            <span>{item.display_name.split(',').slice(0, 2).join(',')}</span>
+          </div>
+        ),
+        data: {
+          name: item.display_name.split(',')[0],
           lat: parseFloat(item.lat),
           lng: parseFloat(item.lon)
         }
       }));
 
-      setEditSearchOptions(cities);
+      // 合并结果，API 结果优先
+      const allResults = [...apiResults];
+      const existingNames = new Set(apiResults.map(r => r.value));
+      
+      for (const result of localResults) {
+        if (!existingNames.has(result.value) && allResults.length < 15) {
+          allResults.push(result);
+          existingNames.add(result.value);
+        }
+      }
+
+      setEditSearchOptions(allResults);
     } catch (error) {
-      console.error('搜索城市失败:', error);
+      console.warn('API 搜索失败，使用本地结果:', error.message);
+      // API 失败时保留本地结果
     } finally {
       setEditSearchLoading(false);
     }
