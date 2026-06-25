@@ -1019,10 +1019,15 @@ function App() {
                   <AutoComplete
                     value={editSearchText}
                     options={editSearchOptions}
-                    onSearch={handleEditSearch}
+                    onSearch={(value) => {
+                      setEditSearchText(value);
+                      handleEditSearch(value);
+                    }}
                     onSelect={handleEditSelectCity}
-                    onChange={setEditSearchText}
+                    onChange={(value) => setEditSearchText(value)}
                     style={{ width: '100%' }}
+                    defaultActiveFirstOption={false}
+                    filterOption={false}
                   >
                     <Input
                       placeholder="搜索并添加城市..."
