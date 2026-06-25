@@ -704,10 +704,16 @@ function App() {
     // 显示本地结果
     setEditSearchOptions(localResults);
 
+    // 如果本地结果足够多，不调用 API
+    if (localResults.length >= 8) {
+      setEditSearchLoading(false);
+      return;
+    }
+
     // 同时调用 Nominatim API
     try {
       const response = await axios.get(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(value)}&limit=10&accept-language=zh-CN,zh`,
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(value)}&limit=10&accept-language=zh-CN,zh&addressdetails=1`,
         { 
           timeout: 5000,
           headers: { 'User-Agent': 'TravelTracker/1.0' }
@@ -717,15 +723,29 @@ function App() {
       const apiResults = response.data
         .filter(item => item.display_name) // 过滤无效结果
         .map(item => {
-          // 提取城市名称（第一部分通常是城市名）
-          const nameParts = item.display_name.split(',');
-          const cityName = nameParts[0].trim();
+          // 提取城市名称（优先使用中文名称）
+          let cityName = '';
+          
+          // 尝试从 address 中获取中文名称
+          if (item.address) {
+            cityName = item.address.city || 
+                       item.address.town || 
+                       item.address.village || 
+                       item.address.county || 
+                       item.address.state || '';
+          }
+          
+          // 如果没有中文名称，从 display_name 中提取
+          if (!cityName) {
+            const nameParts = item.display_name.split(',');
+            cityName = nameParts[0].trim();
+          }
           
           return {
             value: cityName,
             label: (
               <div className="search-option">
-                <span>{nameParts.slice(0, 2).join(',').trim()}</span>
+                <span>{cityName}</span>
               </div>
             ),
             data: {
@@ -734,13 +754,14 @@ function App() {
               lng: parseFloat(item.lon)
             }
           };
-        });
+        })
+        .filter(item => item.value && !item.value.match(/[а-яА-Я]/)); // 过滤俄文结果
 
-      // 合并结果，API 结果优先
-      const allResults = [...apiResults];
-      const existingNames = new Set(apiResults.map(r => r.value));
+      // 合并结果，本地结果优先
+      const allResults = [...localResults];
+      const existingNames = new Set(localResults.map(r => r.value));
       
-      for (const result of localResults) {
+      for (const result of apiResults) {
         if (!existingNames.has(result.value) && allResults.length < 15) {
           allResults.push(result);
           existingNames.add(result.value);
