@@ -39,6 +39,7 @@ const RouteList = ({
 
   const modeOptions = [
     { value: 'driving', label: '🚗 驾车' },
+    { value: 'train', label: '🚂 火车' },
     { value: 'flight', label: '✈️ 飞机' },
     { value: 'walking', label: '🚶 步行' }
   ];

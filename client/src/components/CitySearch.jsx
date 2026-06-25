@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback } from 'react';
 import { Input, AutoComplete, Modal, Radio } from 'antd';
-import { SearchOutlined, CarOutlined, GlobalOutlined } from '@ant-design/icons';
+import { SearchOutlined, CarOutlined, GlobalOutlined, SendOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { CITIES_DATABASE } from '../data/citiesDatabase';
 
@@ -263,6 +263,9 @@ const CitySearch = ({ onAddCity, isFirst }) => {
           >
             <Radio value="driving">
               <CarOutlined /> 驾车 - 沿道路行驶
+            </Radio>
+            <Radio value="train">
+              <SendOutlined /> 火车 - 铁路路线
             </Radio>
             <Radio value="flight">
               <GlobalOutlined /> 飞机 - 直线飞行

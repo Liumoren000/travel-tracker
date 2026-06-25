@@ -193,14 +193,15 @@ const Map = ({
             
             route.segments.forEach((segment, segIndex) => {
               const isFlight = segment.mode === 'flight';
+              const isTrain = segment.mode === 'train';
               const segPolyline = L.polyline(segment.coordinates, {
                 color: color,
                 weight: isSelected ? 6 : 4,
                 opacity: isOtherSelected ? 0.3 : 0.8,
-                dashArray: isFlight ? '10, 8' : null
+                dashArray: isFlight ? '10, 8' : isTrain ? '8, 4' : null
               }).addTo(mapInstanceRef.current);
 
-              const modeLabel = isFlight ? '✈️ 飞行' : segment.mode === 'walking' ? '🚶 步行' : '🚗 驾车';
+              const modeLabel = isFlight ? '✈️ 飞行' : isTrain ? '🚂 火车' : segment.mode === 'walking' ? '🚶 步行' : '🚗 驾车';
               const segDistance = segmentDistances[segIndex] ? segmentDistances[segIndex].formatted : '';
               
               segPolyline.bindPopup(`
@@ -215,14 +216,15 @@ const Map = ({
             allBounds.push(...route.coordinates);
           } else {
             const isFlight = route.mode === 'flight';
+            const isTrain = route.mode === 'train';
             const polyline = L.polyline(route.coordinates, {
               color: color,
               weight: isSelected ? 6 : 4,
               opacity: isOtherSelected ? 0.3 : 0.8,
-              dashArray: isFlight ? '10, 8' : null
+              dashArray: isFlight ? '10, 8' : isTrain ? '8, 4' : null
             }).addTo(mapInstanceRef.current);
 
-            const modeLabel = isFlight ? '✈️ 飞行' : route.mode === 'walking' ? '🚶 步行' : '🚗 驾车';
+            const modeLabel = isFlight ? '✈️ 飞行' : isTrain ? '🚂 火车' : route.mode === 'walking' ? '🚶 步行' : '🚗 驾车';
             polyline.bindPopup(`
               <div style="min-width:180px">
                 <div style="font-weight:bold;font-size:14px;color:${color}">${routeName}</div>

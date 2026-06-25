@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Layout, message, Modal, Input, Button, Tag, List, Popconfirm, AutoComplete, Radio, Space } from 'antd';
-import { EnvironmentOutlined, DeleteOutlined, ClearOutlined, EyeOutlined, PlusOutlined, EditOutlined, SaveOutlined, CloseOutlined, SearchOutlined, ArrowUpOutlined, ArrowDownOutlined, CarOutlined, GlobalOutlined, MenuFoldOutlined, MenuUnfoldOutlined, UploadOutlined, DownloadOutlined } from '@ant-design/icons';
+import { EnvironmentOutlined, DeleteOutlined, ClearOutlined, EyeOutlined, PlusOutlined, EditOutlined, SaveOutlined, CloseOutlined, SearchOutlined, ArrowUpOutlined, ArrowDownOutlined, CarOutlined, GlobalOutlined, SendOutlined, MenuFoldOutlined, MenuUnfoldOutlined, UploadOutlined, DownloadOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import Map from './components/Map';
 import CitySearch from './components/CitySearch';
@@ -771,6 +771,7 @@ function App() {
                 style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
               >
                 <Radio value="driving"><CarOutlined /> 驾车</Radio>
+                <Radio value="train"><SendOutlined /> 火车</Radio>
                 <Radio value="flight"><GlobalOutlined /> 飞机</Radio>
                 <Radio value="walking">🚶 步行</Radio>
               </Radio.Group>
@@ -867,6 +868,7 @@ function App() {
                     size="small"
                   >
                     <Radio.Button value="driving"><CarOutlined /> 驾车</Radio.Button>
+                    <Radio.Button value="train"><SendOutlined /> 火车</Radio.Button>
                     <Radio.Button value="flight"><GlobalOutlined /> 飞机</Radio.Button>
                     <Radio.Button value="walking">🚶 步行</Radio.Button>
                   </Radio.Group>
