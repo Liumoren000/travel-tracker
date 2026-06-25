@@ -429,6 +429,13 @@ function App() {
     }));
   };
 
+  const handleEditCityMode = (index, mode) => {
+    setEditingRoute(prev => ({
+      ...prev,
+      cities: prev.cities.map((c, i) => i === index ? { ...c, mode } : c)
+    }));
+  };
+
   const handleEditMoveCity = (index, direction) => {
     setEditingRoute(prev => {
       const newCities = [...prev.cities];
@@ -980,6 +987,29 @@ function App() {
                     <div className="city-coords">
                       {city.lat.toFixed(4)}, {city.lng.toFixed(4)}
                     </div>
+                    {editingRoute && index > 0 && (
+                      <div style={{ marginTop: 4 }}>
+                        <Select
+                          value={city.mode || 'driving'}
+                          onChange={(value) => handleEditCityMode(index, value)}
+                          size="small"
+                          style={{ width: 100 }}
+                          options={[
+                            { value: 'driving', label: '🚗 驾车' },
+                            { value: 'train', label: '🚂 火车' },
+                            { value: 'flight', label: '✈️ 飞机' },
+                            { value: 'walking', label: '🚶 步行' }
+                          ]}
+                        />
+                      </div>
+                    )}
+                    {!editingRoute && city.mode && index > 0 && (
+                      <div style={{ marginTop: 2, fontSize: 11, color: '#999' }}>
+                        {city.mode === 'driving' ? '🚗 驾车' : 
+                         city.mode === 'train' ? '🚂 火车' :
+                         city.mode === 'flight' ? '✈️ 飞机' : '🚶 步行'}
+                      </div>
+                    )}
                   </div>
                   {editingRoute && (
                     <div style={{ display: 'flex', gap: 2 }}>
