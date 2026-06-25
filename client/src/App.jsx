@@ -1002,29 +1002,83 @@ function App() {
             
             {editingRoute && (
               <div style={{ marginBottom: 12, padding: '8px 0', borderBottom: '1px solid #f0f0f0' }}>
-                <div style={{ marginBottom: 8 }}>
-                  <AutoComplete
+                <div style={{ marginBottom: 8, position: 'relative' }}>
+                  <Input
+                    placeholder="输入城市名称搜索..."
+                    prefix={<SearchOutlined />}
                     value={editSearchText}
-                    options={editSearchOptions}
-                    onSearch={(val) => {
+                    onChange={(e) => {
+                      const val = e.target.value;
                       setEditSearchText(val);
-                      handleEditSearch(val);
+                      // 本地搜索
+                      if (val.trim()) {
+                        const results = CITIES_DATABASE
+                          .filter(city => 
+                            city.name.includes(val.trim()) || 
+                            city.nameEn.toLowerCase().includes(val.trim().toLowerCase())
+                          )
+                          .slice(0, 10)
+                          .map(city => ({
+                            value: city.name,
+                            label: city.name,
+                            name: city.name,
+                            nameEn: city.nameEn,
+                            country: city.country,
+                            lat: city.lat,
+                            lng: city.lng
+                          }));
+                        setEditSearchOptions(results);
+                      } else {
+                        setEditSearchOptions([]);
+                      }
                     }}
-                    onSelect={handleEditSelectCity}
-                    onChange={(val) => {
-                      setEditSearchText(val);
-                      if (!val) setEditSearchOptions([]);
-                    }}
-                    style={{ width: '100%' }}
-                    filterOption={false}
-                    notFoundContent={editSearchLoading ? '搜索中...' : '无匹配城市'}
-                  >
-                    <Input
-                      placeholder="搜索并添加城市..."
-                      prefix={<SearchOutlined />}
-                      loading={editSearchLoading || undefined}
-                    />
-                  </AutoComplete>
+                    loading={editSearchLoading || undefined}
+                  />
+                  {editSearchOptions.length > 0 && (
+                    <div style={{
+                      position: 'absolute',
+                      top: '100%',
+                      left: 0,
+                      right: 0,
+                      zIndex: 1000,
+                      background: '#fff',
+                      border: '1px solid #d9d9d9',
+                      borderRadius: '0 0 4px 4px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+                      maxHeight: '200px',
+                      overflowY: 'auto'
+                    }}>
+                      {editSearchOptions.map((option, index) => (
+                        <div
+                          key={index}
+                          style={{
+                            padding: '8px 12px',
+                            cursor: 'pointer',
+                            borderBottom: '1px solid #f0f0f0'
+                          }}
+                          onClick={() => {
+                            if (editingRoute) {
+                              setEditingRoute(prev => ({
+                                ...prev,
+                                cities: [...prev.cities, { 
+                                  name: option.name, 
+                                  lat: option.lat, 
+                                  lng: option.lng 
+                                }]
+                              }));
+                              message.success(`已添加城市: ${option.name}`);
+                            }
+                            setEditSearchText('');
+                            setEditSearchOptions([]);
+                          }}
+                          onMouseEnter={(e) => e.target.style.background = '#f5f5f5'}
+                          onMouseLeave={(e) => e.target.style.background = '#fff'}
+                        >
+                          {option.name} ({option.nameEn}) - {option.country}
+                        </div>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
                   <span style={{ fontSize: 12, color: '#666', whiteSpace: 'nowrap' }}>交通方式：</span>
