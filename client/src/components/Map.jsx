@@ -5,6 +5,8 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-polylinedecorator';
 import { calculateRouteDistance, formatDistance, calculateSegmentDistances } from '../utils/distance';
+import { getCityDetails } from '../data/cityDetails';
+import { getWeather, formatWeatherHTML } from '../services/weather';
 
 // 地图样式配置
 const MAP_STYLES = {
@@ -165,18 +167,57 @@ const Map = ({
             </div>`
           ).join('');
 
+          // 获取城市详情
+          const cityDetails = getCityDetails(city.name);
+          let cityInfoHTML = '';
+          
+          if (cityDetails) {
+            cityInfoHTML = `
+              <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee;">
+                <div style="font-size: 11px; color: #666; margin-bottom: 4px;">${cityDetails.description}</div>
+                <div style="display: flex; gap: 8px; font-size: 11px; color: #999;">
+                  <span>👥 ${cityDetails.population}</span>
+                </div>
+                ${cityDetails.attractions ? `
+                  <div style="margin-top: 4px; font-size: 11px; color: #666;">
+                    🏛️ ${cityDetails.attractions.slice(0, 3).join('、')}
+                  </div>
+                ` : ''}
+              </div>
+            `;
+          }
+
           const popupContent = `
-            <div style="min-width:200px;max-height:300px;overflow-y:auto">
+            <div style="min-width:200px;max-height:350px;overflow-y:auto">
               <div style="font-weight:bold;font-size:14px;margin-bottom:8px;color:${color}">${routeName}</div>
               <div style="border-top:1px solid #eee;padding-top:8px">
                 ${citiesList}
               </div>
+              ${cityInfoHTML}
+              <div id="weather-${city.name}-${index}" style="margin-top: 8px; font-size: 11px; color: #999;">加载天气中...</div>
             </div>
           `;
 
           const marker = L.marker([city.lat, city.lng], { icon })
             .addTo(mapInstanceRef.current)
             .bindPopup(popupContent);
+
+          // 异步加载天气信息
+          marker.on('popupopen', async () => {
+            const weatherEl = document.getElementById(`weather-${city.name}-${index}`);
+            if (weatherEl) {
+              try {
+                const weather = await getWeather(city.lat, city.lng);
+                if (weather) {
+                  weatherEl.innerHTML = formatWeatherHTML(weather);
+                } else {
+                  weatherEl.innerHTML = '<span style="color: #999;">天气信息获取失败</span>';
+                }
+              } catch (e) {
+                weatherEl.innerHTML = '<span style="color: #999;">天气信息获取失败</span>';
+              }
+            }
+          });
 
           layersRef.current.push(marker);
           allBounds.push([city.lat, city.lng]);
