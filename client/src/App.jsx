@@ -65,9 +65,24 @@ function loadRoutesFromStorage() {
 
 function saveRoutesToStorage(routes) {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(routes));
+    // 只保存必要的数据，减少存储大小
+    const dataToSave = routes.map(route => ({
+      name: route.name || '未命名线路',
+      color: route.color || '#1890ff',
+      cities: route.cities || [],
+      coordinates: route.coordinates || [],
+      segments: route.segments || []
+    }));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(dataToSave));
   } catch (e) {
     console.error('保存线路失败:', e);
+    // 如果存储失败，尝试清理旧数据
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(routes));
+    } catch (e2) {
+      console.error('二次保存也失败:', e2);
+    }
   }
 }
 
