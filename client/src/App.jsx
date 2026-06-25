@@ -951,15 +951,13 @@ function App() {
                   <AutoComplete
                     value={editSearchText}
                     options={editSearchOptions}
-                    onSearch={(value) => {
-                      setEditSearchText(value);
-                      handleEditSearch(value);
-                    }}
+                    onSearch={handleEditSearch}
                     onSelect={handleEditSelectCity}
-                    onChange={(value) => setEditSearchText(value)}
+                    onChange={setEditSearchText}
                     style={{ width: '100%' }}
-                    defaultActiveFirstOption={false}
-                    filterOption={false}
+                    filterOption={(inputValue, option) =>
+                      option.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
+                    }
                   >
                     <Input
                       placeholder="搜索并添加城市..."
