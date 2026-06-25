@@ -7,6 +7,7 @@ import CitySearch from './components/CitySearch';
 import RouteList from './components/RouteList';
 import History from './components/History';
 import Statistics from './components/Statistics';
+import CityInfoModal from './components/CityInfoModal';
 import { useStatistics } from './hooks/useStatistics';
 import { downloadGPX, importGPXFile } from './utils/gpx';
 import { CITIES_DATABASE } from './data/citiesDatabase';
@@ -95,6 +96,8 @@ function App() {
   const [editSearchLoading, setEditSearchLoading] = useState(false);
   const [transportMode, setTransportMode] = useState('driving');
   const [siderCollapsed, setSiderCollapsed] = useState(false);
+  const [cityInfoVisible, setCityInfoVisible] = useState(false);
+  const [selectedCityInfo, setSelectedCityInfo] = useState(null);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -886,8 +889,21 @@ function App() {
           onDeleteCity={handleDeleteCityFromMap}
           siderCollapsed={siderCollapsed}
           onToggleSider={toggleSider}
+          onCityClick={(city) => {
+            setSelectedCityInfo(city);
+            setCityInfoVisible(true);
+          }}
         />
       </Content>
+
+      <CityInfoModal
+        visible={cityInfoVisible}
+        onClose={() => {
+          setCityInfoVisible(false);
+          setSelectedCityInfo(null);
+        }}
+        city={selectedCityInfo}
+      />
 
       <Modal
         title="保存路线"

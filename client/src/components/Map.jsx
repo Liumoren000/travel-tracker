@@ -40,7 +40,8 @@ const Map = ({
   onMapClick,
   onDeleteCity,
   siderCollapsed = false,
-  onToggleSider
+  onToggleSider,
+  onCityClick
 }) => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -126,6 +127,16 @@ const Map = ({
     };
   }, [addMode, onMapClick]);
 
+  // 设置全局城市详情打开函数
+  useEffect(() => {
+    if (onCityClick) {
+      window.__openCityInfo = onCityClick;
+    }
+    return () => {
+      delete window.__openCityInfo;
+    };
+  }, [onCityClick]);
+
   useEffect(() => {
     if (!mapInstanceRef.current) return;
 
@@ -167,57 +178,23 @@ const Map = ({
             </div>`
           ).join('');
 
-          // 获取城市详情
-          const cityDetails = getCityDetails(city.name);
-          let cityInfoHTML = '';
-          
-          if (cityDetails) {
-            cityInfoHTML = `
-              <div style="margin-top: 8px; padding-top: 8px; border-top: 1px solid #eee;">
-                <div style="font-size: 11px; color: #666; margin-bottom: 4px;">${cityDetails.description}</div>
-                <div style="display: flex; gap: 8px; font-size: 11px; color: #999;">
-                  <span>👥 ${cityDetails.population}</span>
-                </div>
-                ${cityDetails.attractions ? `
-                  <div style="margin-top: 4px; font-size: 11px; color: #666;">
-                    🏛️ ${cityDetails.attractions.slice(0, 3).join('、')}
-                  </div>
-                ` : ''}
-              </div>
-            `;
-          }
-
           const popupContent = `
-            <div style="min-width:200px;max-height:350px;overflow-y:auto">
+            <div style="min-width:200px;max-height:300px;overflow-y:auto">
               <div style="font-weight:bold;font-size:14px;margin-bottom:8px;color:${color}">${routeName}</div>
               <div style="border-top:1px solid #eee;padding-top:8px">
                 ${citiesList}
               </div>
-              ${cityInfoHTML}
-              <div id="weather-${city.name}-${index}" style="margin-top: 8px; font-size: 11px; color: #999;">加载天气中...</div>
+              <div style="margin-top:8px;text-align:center">
+                <button onclick="window.__openCityInfo && window.__openCityInfo({name:'${city.name}',lat:${city.lat},lng:${city.lng}})" style="padding:4px 12px;background:#1890ff;color:white;border:none;border-radius:4px;cursor:pointer;font-size:12px">
+                  查看城市详情
+                </button>
+              </div>
             </div>
           `;
 
           const marker = L.marker([city.lat, city.lng], { icon })
             .addTo(mapInstanceRef.current)
             .bindPopup(popupContent);
-
-          // 异步加载天气信息
-          marker.on('popupopen', async () => {
-            const weatherEl = document.getElementById(`weather-${city.name}-${index}`);
-            if (weatherEl) {
-              try {
-                const weather = await getWeather(city.lat, city.lng);
-                if (weather) {
-                  weatherEl.innerHTML = formatWeatherHTML(weather);
-                } else {
-                  weatherEl.innerHTML = '<span style="color: #999;">天气信息获取失败</span>';
-                }
-              } catch (e) {
-                weatherEl.innerHTML = '<span style="color: #999;">天气信息获取失败</span>';
-              }
-            }
-          });
 
           layersRef.current.push(marker);
           allBounds.push([city.lat, city.lng]);
