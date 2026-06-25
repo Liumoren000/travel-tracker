@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { Button, message, Dropdown, Space } from 'antd';
 import { DownloadOutlined, EnvironmentOutlined, MenuFoldOutlined, MenuUnfoldOutlined, GlobalOutlined } from '@ant-design/icons';
 import L from 'leaflet';
@@ -33,7 +33,7 @@ const MAP_STYLES = {
   }
 };
 
-const Map = ({ 
+const Map = forwardRef(({ 
   routes = [], 
   currentRoute = null, 
   selectedRouteIndex = null,
@@ -42,8 +42,10 @@ const Map = ({
   onDeleteCity,
   siderCollapsed = false,
   onToggleSider,
-  onCityClick
-}) => {
+  onCityClick,
+  animatingRouteIndex = null,
+  onAnimationEnd
+}, ref) => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const layersRef = useRef([]);
@@ -726,15 +728,13 @@ const Map = ({
       )}
 
       {/* 路线动画 */}
-      {hasRoutes && (
-        <RouteAnimation 
-          map={mapInstanceRef.current} 
-          routes={routes} 
-          currentRoute={currentRoute} 
-        />
-      )}
+      <RouteAnimation 
+        map={mapInstanceRef.current} 
+        route={animatingRouteIndex !== null ? routes[animatingRouteIndex] : null}
+        onAnimationEnd={onAnimationEnd}
+      />
     </div>
   );
-};
+});
 
 export default Map;
