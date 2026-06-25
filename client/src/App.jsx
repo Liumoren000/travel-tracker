@@ -725,11 +725,11 @@ function App() {
         })
         .filter(item => item.value && !item.value.match(/[а-яА-Я]/));
 
-      // 合并结果，API 结果优先
-      const allResults = [...apiResults];
-      const existingNames = new Set(apiResults.map(r => r.value));
+      // 合并结果，本地中文结果优先
+      const allResults = [...localResults];
+      const existingNames = new Set(localResults.map(r => r.value));
       
-      for (const result of localResults) {
+      for (const result of apiResults) {
         if (!existingNames.has(result.value) && allResults.length < 15) {
           allResults.push(result);
           existingNames.add(result.value);
