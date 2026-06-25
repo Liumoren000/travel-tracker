@@ -147,7 +147,7 @@ const CitySearch = ({ onAddCity, isFirst }) => {
     const abortController = new AbortController();
     abortControllerRef.current = abortController;
 
-    // 同时发起 API 请求
+    // 同时发起 API 请求（减少延迟）
     searchTimeoutRef.current = setTimeout(async () => {
       try {
         const nominatimResults = await searchNominatim(value, abortController.signal);
@@ -155,31 +155,32 @@ const CitySearch = ({ onAddCity, isFirst }) => {
         // 检查请求是否被取消
         if (abortController.signal.aborted) return;
         
-        // 合并结果，API 结果优先
-        const allResults = [...nominatimResults];
-        const existingNames = new Set(nominatimResults.map(r => r.value));
-        
-        // 添加本地结果（去重）
-        for (const result of localResults) {
-          if (!existingNames.has(result.value) && allResults.length < 15) {
-            allResults.push(result);
-            existingNames.add(result.value);
+        // 如果 API 返回了结果，合并结果（API 优先）
+        if (nominatimResults.length > 0) {
+          const allResults = [...nominatimResults];
+          const existingNames = new Set(nominatimResults.map(r => r.value));
+          
+          // 添加本地结果（去重）
+          for (const result of localResults) {
+            if (!existingNames.has(result.value) && allResults.length < 15) {
+              allResults.push(result);
+              existingNames.add(result.value);
+            }
           }
+          setOptions(allResults);
         }
-
-        setOptions(allResults);
+        // 如果 API 没有返回结果，保留本地结果（不覆盖）
       } catch (error) {
         if (!axios.isCancel(error)) {
-          console.error('搜索失败:', error);
-          // API 失败时保留本地结果
-          setOptions(localResults);
+          console.warn('API 搜索失败，使用本地结果:', error.message);
+          // API 失败时保留本地结果（不覆盖）
         }
       } finally {
         if (!abortController.signal.aborted) {
           setLoading(false);
         }
       }
-    }, 200);
+    }, 150);
   }, [searchLocal, searchNominatim]);
 
   const handleSelect = useCallback((value, option) => {
