@@ -303,22 +303,33 @@ const Map = ({
       });
 
       if (Array.isArray(currentRoute.coordinates) && currentRoute.coordinates.length > 0) {
+        // 计算当前路线距离
+        const currentRouteDistance = calculateRouteDistance(currentRoute.cities);
+        const formattedCurrentRouteDistance = formatDistance(currentRouteDistance);
+        
         // Check if currentRoute has segments with different modes
         if (Array.isArray(currentRoute.segments) && currentRoute.segments.length > 0) {
-          currentRoute.segments.forEach((segment) => {
+          // 计算各段距离
+          const currentSegmentDistances = calculateSegmentDistances(currentRoute.cities);
+          
+          currentRoute.segments.forEach((segment, segIndex) => {
             const isFlight = segment.mode === 'flight';
+            const isTrain = segment.mode === 'train';
             const segPolyline = L.polyline(segment.coordinates, {
               color: '#1890ff',
               weight: 5,
               opacity: 0.9,
-              dashArray: isFlight ? '10, 8' : '8, 4'
+              dashArray: isFlight ? '10, 8' : isTrain ? '8, 4' : null
             }).addTo(mapInstanceRef.current);
 
-            const modeLabel = isFlight ? '✈️ 飞行' : segment.mode === 'walking' ? '🚶 步行' : '🚗 驾车';
+            const modeLabel = isFlight ? '✈️ 飞行' : isTrain ? '🚂 火车' : segment.mode === 'walking' ? '🚶 步行' : '🚗 驾车';
+            const segDistance = currentSegmentDistances[segIndex] ? currentSegmentDistances[segIndex].formatted : '';
+            
             segPolyline.bindPopup(`
-              <div style="min-width:150px">
+              <div style="min-width:180px">
                 <div style="font-weight:bold;font-size:14px;color:#1890ff">${segment.from} → ${segment.to}</div>
                 <div style="font-size:12px;color:#999;margin-top:2px">${modeLabel}</div>
+                <div style="font-size:12px;color:#666;margin-top:4px">距离: ${segDistance}</div>
               </div>
             `);
             layersRef.current.push(segPolyline);
@@ -326,18 +337,20 @@ const Map = ({
           allBounds.push(...currentRoute.coordinates);
         } else {
           const isFlight = currentRoute.mode === 'flight';
+          const isTrain = currentRoute.mode === 'train';
           const polyline = L.polyline(currentRoute.coordinates, {
             color: '#1890ff',
             weight: 5,
             opacity: 0.9,
-            dashArray: isFlight ? '10, 8' : '8, 4'
+            dashArray: isFlight ? '10, 8' : isTrain ? '8, 4' : null
           }).addTo(mapInstanceRef.current);
 
-          const modeLabel = isFlight ? '✈️ 飞行' : currentRoute.mode === 'walking' ? '🚶 步行' : '🚗 驾车';
+          const modeLabel = isFlight ? '✈️ 飞行' : isTrain ? '🚂 火车' : currentRoute.mode === 'walking' ? '🚶 步行' : '🚗 驾车';
           polyline.bindPopup(`
-            <div style="min-width:150px">
+            <div style="min-width:180px">
               <div style="font-weight:bold;font-size:14px;color:#1890ff">${routeName}</div>
               <div style="font-size:12px;color:#999;margin-top:2px">${modeLabel}</div>
+              <div style="font-size:12px;color:#666;margin-top:4px">总距离: ${formattedCurrentRouteDistance}</div>
               <div style="font-size:12px;color:#666;margin-top:5px">
                 ${currentRoute.cities.map(c => c.name).join(' → ')}
               </div>
