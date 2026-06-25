@@ -760,10 +760,13 @@ function App() {
   const displayRoute = editingRoute || selectedRouteDetail;
   const { stats, loading: statsLoading } = useStatistics(routes);
 
+  // 检测是否为移动端
+  const isMobile = window.innerWidth <= 768;
+
   return (
     <Layout className="app-layout">
       <Sider 
-        width={380} 
+        width={isMobile ? '100%' : 380} 
         collapsedWidth={0}
         collapsed={siderCollapsed}
         onCollapse={setSiderCollapsed}

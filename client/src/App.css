@@ -433,3 +433,253 @@ body {
   margin: 0;
   font-size: 11px;
 }
+
+/* ==================== 移动端响应式样式 ==================== */
+
+/* 平板和小屏幕 (768px 以下) */
+@media (max-width: 768px) {
+  .app-sider {
+    position: fixed !important;
+    z-index: 2000;
+    height: 100vh;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.15);
+  }
+  
+  .app-sider.ant-layout-sider-collapsed {
+    box-shadow: none;
+  }
+  
+  .sider-content {
+    padding: 12px;
+  }
+  
+  .app-title {
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+  }
+  
+  .app-title h1 {
+    font-size: 18px;
+  }
+  
+  /* 统计栏移动端样式 */
+  .statistics-container {
+    top: 8px;
+    left: 8px;
+    right: 8px;
+    transform: none;
+    min-width: auto;
+    max-width: none;
+  }
+  
+  .statistics-item-sm {
+    font-size: 11px;
+  }
+  
+  /* 地图控件移动端适配 */
+  .map-container {
+    height: 100%;
+  }
+  
+  /* 按钮移动端优化 */
+  .ant-btn {
+    min-height: 36px;
+  }
+  
+  /* 弹窗移动端优化 */
+  .ant-modal {
+    max-width: 95vw;
+    margin: 10px auto;
+  }
+  
+  .ant-modal-content {
+    border-radius: 8px;
+  }
+  
+  .route-detail {
+    max-height: 60vh;
+  }
+  
+  /* 列表项移动端优化 */
+  .ant-list-item {
+    padding: 12px 0 !important;
+  }
+  
+  .route-list-item {
+    padding: 12px !important;
+  }
+  
+  /* 搜索下拉移动端优化 */
+  .search-dropdown {
+    max-height: 200px;
+  }
+  
+  /* 标签移动端优化 */
+  .ant-tag {
+    padding: 2px 6px;
+    font-size: 12px;
+  }
+  
+  /* 历史记录移动端优化 */
+  .history-panel {
+    padding-top: 12px;
+  }
+  
+  /* 路线列表移动端优化 */
+  .map-routes {
+    max-height: 200px;
+  }
+}
+
+/* 手机屏幕 (480px 以下) */
+@media (max-width: 480px) {
+  .app-sider {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+  
+  .sider-content {
+    padding: 8px;
+  }
+  
+  .app-title {
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+  }
+  
+  .app-title h1 {
+    font-size: 16px;
+  }
+  
+  .app-title .anticon {
+    font-size: 20px;
+  }
+  
+  /* 搜索框移动端优化 */
+  .city-search .ant-input {
+    font-size: 16px; /* 防止iOS缩放 */
+    padding: 8px 12px;
+  }
+  
+  /* 按钮移动端优化 */
+  .ant-btn {
+    min-height: 40px;
+    font-size: 14px;
+  }
+  
+  /* 统计栏手机端样式 */
+  .statistics-container {
+    top: 4px;
+    left: 4px;
+    right: 4px;
+  }
+  
+  .statistics-summary {
+    padding: 4px 8px;
+  }
+  
+  .statistics-item-sm {
+    font-size: 10px;
+    gap: 2px;
+  }
+  
+  .statistics-detail {
+    max-height: 200px;
+    padding: 0 8px 6px;
+  }
+  
+  /* 弹窗手机端优化 */
+  .ant-modal {
+    margin: 5px auto;
+  }
+  
+  .ant-modal-header {
+    padding: 12px 16px;
+  }
+  
+  .ant-modal-body {
+    padding: 12px 16px;
+  }
+  
+  .ant-modal-footer {
+    padding: 8px 16px;
+  }
+  
+  .route-detail {
+    max-height: 50vh;
+  }
+  
+  .route-detail-city {
+    padding: 6px 0;
+  }
+  
+  /* 列表手机端优化 */
+  .ant-list-item {
+    padding: 8px 0 !important;
+  }
+  
+  .route-list-item {
+    padding: 8px !important;
+  }
+  
+  .ant-list-item-meta-title {
+    font-size: 13px !important;
+  }
+  
+  .ant-list-item-meta-description {
+    font-size: 11px !important;
+  }
+  
+  /* 标签手机端优化 */
+  .ant-tag {
+    padding: 1px 4px;
+    font-size: 11px;
+  }
+  
+  /* 城市标记手机端优化 */
+  .marker-label {
+    font-size: 10px;
+    padding: 2px 6px;
+  }
+  
+  /* 路线预览手机端优化 */
+  .route-cities-preview .ant-tag {
+    font-size: 10px;
+  }
+  
+  /* 模态框手机端优化 */
+  .route-detail-header {
+    flex-wrap: wrap;
+    gap: 4px;
+  }
+  
+  .route-detail-header .ant-input {
+    width: 100% !important;
+  }
+  
+  /* 交通方式选择手机端优化 */
+  .ant-radio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .ant-radio-button-wrapper {
+    text-align: center;
+  }
+}
+
+/* 横屏模式优化 */
+@media (max-height: 500px) and (orientation: landscape) {
+  .statistics-container {
+    top: 4px;
+  }
+  
+  .statistics-detail {
+    max-height: 150px;
+  }
+  
+  .route-detail {
+    max-height: 40vh;
+  }
+}
