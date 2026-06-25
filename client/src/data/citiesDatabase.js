@@ -62,6 +62,8 @@ const CITIES_DATABASE = [
   { name: '聊城', nameEn: 'Liaocheng', lat: 36.4560, lng: 115.9854, country: '中国', countryCode: 'CN' },
   { name: '滨州', nameEn: 'Binzhou', lat: 37.3819, lng: 117.9727, country: '中国', countryCode: 'CN' },
   { name: '菏泽', nameEn: 'Heze', lat: 35.2336, lng: 115.4810, country: '中国', countryCode: 'CN' },
+  { name: '西安', nameEn: "Xi'an", lat: 34.3416, lng: 108.9398, country: '中国', countryCode: 'CN' },
+  { name: '太原', nameEn: 'Taiyuan', lat: 37.8706, lng: 112.5489, country: '中国', countryCode: 'CN' },
   { name: '枣庄', nameEn: 'Zaozhuang', lat: 34.8564, lng: 117.3283, country: '中国', countryCode: 'CN' },
   { name: '日照', nameEn: 'Rizhao', lat: 35.3813, lng: 119.5269, country: '中国', countryCode: 'CN' },
   { name: '东营', nameEn: 'Dongying', lat: 37.4616, lng: 118.6742, country: '中国', countryCode: 'CN' },
