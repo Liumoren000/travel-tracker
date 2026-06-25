@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Layout, message, Modal, Input, Button, Tag, List, Popconfirm, AutoComplete, Radio, Space, Select } from 'antd';
-import { EnvironmentOutlined, DeleteOutlined, ClearOutlined, EyeOutlined, PlusOutlined, EditOutlined, SaveOutlined, CloseOutlined, SearchOutlined, ArrowUpOutlined, ArrowDownOutlined, CarOutlined, GlobalOutlined, SendOutlined, MenuFoldOutlined, MenuUnfoldOutlined, UploadOutlined, DownloadOutlined, CaretRightOutlined, PauseOutlined } from '@ant-design/icons';
+import { EnvironmentOutlined, DeleteOutlined, ClearOutlined, EyeOutlined, PlusOutlined, EditOutlined, SaveOutlined, CloseOutlined, SearchOutlined, ArrowUpOutlined, ArrowDownOutlined, CarOutlined, GlobalOutlined, SendOutlined, MenuFoldOutlined, MenuUnfoldOutlined, UploadOutlined, DownloadOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import Map from './components/Map';
 import CitySearch from './components/CitySearch';
@@ -98,8 +98,6 @@ function App() {
   const [siderCollapsed, setSiderCollapsed] = useState(false);
   const [cityInfoVisible, setCityInfoVisible] = useState(false);
   const [selectedCityInfo, setSelectedCityInfo] = useState(null);
-  const [animatingRouteIndex, setAnimatingRouteIndex] = useState(null);
-  const mapRef = useRef(null);
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -843,28 +841,6 @@ function App() {
                     actions={[
                       <Button
                         type="text"
-                        icon={animatingRouteIndex === index ? <PauseOutlined /> : <CaretRightOutlined />}
-                        size="small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (animatingRouteIndex === index) {
-                            // 暂停动画
-                            mapRef.current?._routeAnimation?.pause();
-                            setAnimatingRouteIndex(null);
-                          } else {
-                            // 开始动画
-                            setAnimatingRouteIndex(index);
-                            setSelectedRouteIndex(index);
-                            setTimeout(() => {
-                              mapRef.current?._routeAnimation?.play();
-                            }, 100);
-                          }
-                        }}
-                        title={animatingRouteIndex === index ? '暂停动画' : '播放动画'}
-                        style={{ color: animatingRouteIndex === index ? '#ff4d4f' : undefined }}
-                      />,
-                      <Button
-                        type="text"
                         icon={<EyeOutlined />}
                         size="small"
                         onClick={(e) => handleViewRouteDetail(route, e)}
@@ -906,7 +882,6 @@ function App() {
       <Content className="app-content">
         <Statistics stats={stats} loading={statsLoading} routes={routes} />
         <Map 
-          ref={mapRef}
           routes={routes} 
           currentRoute={currentRoute} 
           selectedRouteIndex={selectedRouteIndex}
@@ -919,8 +894,6 @@ function App() {
             setSelectedCityInfo(city);
             setCityInfoVisible(true);
           }}
-          animatingRouteIndex={animatingRouteIndex}
-          onAnimationEnd={() => setAnimatingRouteIndex(null)}
         />
       </Content>
 

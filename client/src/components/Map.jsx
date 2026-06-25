@@ -5,7 +5,6 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-polylinedecorator';
 import { calculateRouteDistance, formatDistance, calculateSegmentDistances } from '../utils/distance';
-import RouteAnimation from './RouteAnimation';
 import { getCityDetails } from '../data/cityDetails';
 import { getWeather, formatWeatherHTML } from '../services/weather';
 
@@ -42,9 +41,7 @@ const Map = forwardRef(({
   onDeleteCity,
   siderCollapsed = false,
   onToggleSider,
-  onCityClick,
-  animatingRouteIndex = null,
-  onAnimationEnd
+  onCityClick
 }, ref) => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -726,13 +723,6 @@ const Map = forwardRef(({
           <EnvironmentOutlined /> 点击地图添加城市位置
         </div>
       )}
-
-      {/* 路线动画 */}
-      <RouteAnimation 
-        map={mapInstanceRef.current} 
-        route={animatingRouteIndex !== null ? routes[animatingRouteIndex] : null}
-        onAnimationEnd={onAnimationEnd}
-      />
     </div>
   );
 });
