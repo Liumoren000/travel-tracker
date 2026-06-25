@@ -754,10 +754,7 @@ function App() {
       message.success(`已添加城市: ${option.data.name}`);
     }
     setEditSearchText('');
-    // 延迟清空选项，避免闪烁
-    setTimeout(() => {
-      setEditSearchOptions([]);
-    }, 100);
+    setEditSearchOptions([]);
   };
 
   const displayRoute = editingRoute || selectedRouteDetail;
