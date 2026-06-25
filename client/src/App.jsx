@@ -1010,29 +1010,31 @@ function App() {
                     onChange={(e) => {
                       const val = e.target.value;
                       setEditSearchText(val);
+                      console.log('搜索输入:', val);
+                      
                       // 本地搜索
                       if (val.trim()) {
+                        const q = val.trim();
                         const results = CITIES_DATABASE
-                          .filter(city => 
-                            city.name.includes(val.trim()) || 
-                            city.nameEn.toLowerCase().includes(val.trim().toLowerCase())
-                          )
+                          .filter(city => {
+                            const match = city.name.includes(q) || 
+                                         city.nameEn.toLowerCase().includes(q.toLowerCase());
+                            return match;
+                          })
                           .slice(0, 10)
                           .map(city => ({
-                            value: city.name,
-                            label: city.name,
                             name: city.name,
                             nameEn: city.nameEn,
                             country: city.country,
                             lat: city.lat,
                             lng: city.lng
                           }));
+                        console.log('搜索结果:', results.length, '个城市');
                         setEditSearchOptions(results);
                       } else {
                         setEditSearchOptions([]);
                       }
                     }}
-                    loading={editSearchLoading || undefined}
                   />
                   {editSearchOptions.length > 0 && (
                     <div style={{
