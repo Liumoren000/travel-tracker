@@ -141,32 +141,26 @@ const CitySearch = ({ onAddCity, isFirst }) => {
     // 立即显示本地搜索结果
     const localResults = searchLocal(value);
     setOptions(localResults);
-    
-    // 如果本地结果足够多，就不需要调用 API
-    if (localResults.length >= 8) {
-      setLoading(false);
-      return;
-    }
+    setLoading(true);
 
-    // 防抖：延迟 300ms 后再发起 API 请求
+    // 创建新的 AbortController
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
+
+    // 同时发起 API 请求
     searchTimeoutRef.current = setTimeout(async () => {
-      setLoading(true);
-      
-      // 创建新的 AbortController
-      const abortController = new AbortController();
-      abortControllerRef.current = abortController;
-      
       try {
         const nominatimResults = await searchNominatim(value, abortController.signal);
         
         // 检查请求是否被取消
         if (abortController.signal.aborted) return;
         
-        // 合并结果，本地结果优先
-        const allResults = [...localResults];
-        const existingNames = new Set(localResults.map(r => r.value));
+        // 合并结果，API 结果优先
+        const allResults = [...nominatimResults];
+        const existingNames = new Set(nominatimResults.map(r => r.value));
         
-        for (const result of nominatimResults) {
+        // 添加本地结果（去重）
+        for (const result of localResults) {
           if (!existingNames.has(result.value) && allResults.length < 15) {
             allResults.push(result);
             existingNames.add(result.value);
@@ -177,13 +171,15 @@ const CitySearch = ({ onAddCity, isFirst }) => {
       } catch (error) {
         if (!axios.isCancel(error)) {
           console.error('搜索失败:', error);
+          // API 失败时保留本地结果
+          setOptions(localResults);
         }
       } finally {
         if (!abortController.signal.aborted) {
           setLoading(false);
         }
       }
-    }, 300);
+    }, 200);
   }, [searchLocal, searchNominatim]);
 
   const handleSelect = useCallback((value, option) => {
