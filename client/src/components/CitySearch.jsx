@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useCallback } from 'react';
 import { Input, AutoComplete, Modal, Radio } from 'antd';
 import { SearchOutlined, CarOutlined, GlobalOutlined } from '@ant-design/icons';
 import axios from 'axios';
@@ -11,10 +11,13 @@ const CitySearch = ({ onAddCity, isFirst }) => {
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedCity, setSelectedCity] = useState(null);
   const [selectedMode, setSelectedMode] = useState('driving');
+  const abortControllerRef = useRef(null);
+  const searchTimeoutRef = useRef(null);
 
   // 本地搜索函数
-  const searchLocal = (query) => {
+  const searchLocal = useCallback((query) => {
     const q = query.trim();
+    if (!q) return [];
     
     // 搜索结果并排序
     const results = CITIES_DATABASE
@@ -74,7 +77,7 @@ const CitySearch = ({ onAddCity, isFirst }) => {
         lng: city.lng
       }
     }));
-  };
+  }, []);
 
   // 获取英文名首字母
   const getInitials = (nameEn) => {
@@ -82,12 +85,13 @@ const CitySearch = ({ onAddCity, isFirst }) => {
   };
 
   // Nominatim API 搜索
-  const searchNominatim = async (query) => {
+  const searchNominatim = useCallback(async (query, signal) => {
     try {
       const response = await axios.get(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=10&accept-language=zh`,
         { 
           timeout: 5000,
+          signal,
           headers: {
             'User-Agent': 'TravelTracker/1.0'
           }
@@ -108,41 +112,81 @@ const CitySearch = ({ onAddCity, isFirst }) => {
         }
       }));
     } catch (error) {
-      console.warn('Nominatim 搜索失败:', error.message);
+      if (axios.isCancel(error)) {
+        console.log('请求已取消');
+      } else {
+        console.warn('Nominatim 搜索失败:', error.message);
+      }
       return [];
     }
-  };
+  }, []);
 
-  const searchCity = async (value) => {
-    if (!value || value.length < 1) {
+  const searchCity = useCallback((value) => {
+    // 清除之前的定时器
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    if (!value || value.trim().length < 1) {
       setOptions([]);
+      setLoading(false);
       return;
     }
 
-    setLoading(true);
-    
-    // 首先尝试本地搜索
-    const localResults = searchLocal(value);
-    
-    // 同时发起 Nominatim 搜索
-    const nominatimResults = await searchNominatim(value);
-    
-    // 合并结果，本地结果优先
-    const allResults = [...localResults];
-    const existingNames = new Set(localResults.map(r => r.value));
-    
-    for (const result of nominatimResults) {
-      if (!existingNames.has(result.value) && allResults.length < 15) {
-        allResults.push(result);
-        existingNames.add(result.value);
-      }
+    // 取消之前的 API 请求
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
     }
 
-    setOptions(allResults);
-    setLoading(false);
-  };
+    // 立即显示本地搜索结果
+    const localResults = searchLocal(value);
+    setOptions(localResults);
+    
+    // 如果本地结果足够多，就不需要调用 API
+    if (localResults.length >= 8) {
+      setLoading(false);
+      return;
+    }
 
-  const handleSelect = (value, option) => {
+    // 防抖：延迟 500ms 后再发起 API 请求
+    searchTimeoutRef.current = setTimeout(async () => {
+      setLoading(true);
+      
+      // 创建新的 AbortController
+      const abortController = new AbortController();
+      abortControllerRef.current = abortController;
+      
+      try {
+        const nominatimResults = await searchNominatim(value, abortController.signal);
+        
+        // 检查请求是否被取消
+        if (abortController.signal.aborted) return;
+        
+        // 合并结果，本地结果优先
+        const allResults = [...localResults];
+        const existingNames = new Set(localResults.map(r => r.value));
+        
+        for (const result of nominatimResults) {
+          if (!existingNames.has(result.value) && allResults.length < 15) {
+            allResults.push(result);
+            existingNames.add(result.value);
+          }
+        }
+
+        setOptions(allResults);
+      } catch (error) {
+        if (!axios.isCancel(error)) {
+          console.error('搜索失败:', error);
+        }
+      } finally {
+        if (!abortController.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    }, 500);
+  }, [searchLocal, searchNominatim]);
+
+  const handleSelect = useCallback((value, option) => {
     if (isFirst) {
       // First city doesn't need transport mode
       onAddCity(option.data);
@@ -154,9 +198,9 @@ const CitySearch = ({ onAddCity, isFirst }) => {
       setSelectedMode('driving');
       setModalVisible(true);
     }
-  };
+  }, [isFirst, onAddCity]);
 
-  const handleConfirm = () => {
+  const handleConfirm = useCallback(() => {
     if (selectedCity) {
       onAddCity({ ...selectedCity, mode: selectedMode });
       setSearchText('');
@@ -164,18 +208,18 @@ const CitySearch = ({ onAddCity, isFirst }) => {
       setModalVisible(false);
       setSelectedCity(null);
     }
-  };
+  }, [selectedCity, selectedMode, onAddCity]);
 
-  const handleCancel = () => {
+  const handleCancel = useCallback(() => {
     setModalVisible(false);
     setSelectedCity(null);
-  };
+  }, []);
 
-  const handleSearch = () => {
+  const handleSearch = useCallback(() => {
     if (searchText.trim()) {
       searchCity(searchText);
     }
-  };
+  }, [searchText, searchCity]);
 
   return (
     <div className="city-search">
@@ -186,6 +230,8 @@ const CitySearch = ({ onAddCity, isFirst }) => {
         onSelect={handleSelect}
         onChange={setSearchText}
         style={{ width: '100%' }}
+        defaultActiveFirstOption={false}
+        filterOption={false}
       >
         <Input
           placeholder="输入城市名称搜索..."
