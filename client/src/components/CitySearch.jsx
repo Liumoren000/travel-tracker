@@ -148,7 +148,7 @@ const CitySearch = ({ onAddCity, isFirst }) => {
       return;
     }
 
-    // 防抖：延迟 500ms 后再发起 API 请求
+    // 防抖：延迟 300ms 后再发起 API 请求
     searchTimeoutRef.current = setTimeout(async () => {
       setLoading(true);
       
@@ -183,7 +183,7 @@ const CitySearch = ({ onAddCity, isFirst }) => {
           setLoading(false);
         }
       }
-    }, 500);
+    }, 300);
   }, [searchLocal, searchNominatim]);
 
   const handleSelect = useCallback((value, option) => {
