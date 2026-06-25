@@ -17,6 +17,11 @@
 - 🖱️ **地图点击添加**：直接在地图上点击添加城市
 - 📍 **线路详情**：点击线路查看距离、交通方式和城市列表
 - 🖼️ **导出图片**：将地图轨迹导出为 PNG 图片
+- ➡️ **轨迹方向箭头**：在轨迹线上显示方向箭头
+
+### 城市信息
+- 🏙️ **城市详情**：点击查看城市简介、人口、主要景点
+- 🌤️ **天气信息**：显示目的地当前天气和未来3天预报
 
 ### 数据管理
 - 📤 **GPX 导出**：导出标准 GPX 文件，可在 Google Earth 等软件中打开
@@ -26,7 +31,7 @@
 - 🔄 **自动同步**：支持代码修改后自动同步到 GitHub
 
 ### 界面特性
-- 📱 **响应式设计**：支持桌面和移动端
+- 📱 **响应式设计**：支持桌面和移动端，适配手机和平板
 - 🎨 **可折叠侧边栏**：最大化地图显示区域
 - 🖱️ **可拖动统计栏**：自由调整统计信息位置
 - 🌙 **暗色主题**：地图支持暗色模式
@@ -44,6 +49,11 @@
 - Node.js
 - Express
 - SQLite (better-sqlite3)
+
+### 外部 API
+- OpenStreetMap Nominatim - 地理编码
+- Open-Meteo - 天气信息
+- OSRM - 路线规划
 
 ## 安装和运行
 
@@ -94,6 +104,7 @@ npm run dev
 - **切换地图样式**：点击左下角地球图标，选择标准/卫星/地形/暗色主题
 - **查看线路详情**：点击地图上的线路，查看距离、交通方式和城市列表
 - **查看轨迹里程**：点击轨迹线即可查看该段路线的距离
+- **查看城市详情**：点击城市标记，在弹出框中点击"查看城市详情"按钮
 - **导出图片**：点击右上角"导出图片"按钮
 - **折叠侧边栏**：点击左下角箭头图标
 
@@ -128,38 +139,41 @@ npm run dev
 
 ```
 自由轨迹/
-├── client/                    # React 前端
+├── client/                        # React 前端
 │   ├── src/
-│   │   ├── components/        # 组件
-│   │   │   ├── Map.jsx        # 地图组件
-│   │   │   ├── CitySearch.jsx # 城市搜索
-│   │   │   ├── RouteList.jsx  # 路线列表
-│   │   │   ├── History.jsx    # 历史记录
-│   │   │   └── Statistics.jsx # 统计信息
+│   │   ├── components/            # 组件
+│   │   │   ├── Map.jsx            # 地图组件
+│   │   │   ├── CitySearch.jsx     # 城市搜索
+│   │   │   ├── RouteList.jsx      # 路线列表
+│   │   │   ├── History.jsx        # 历史记录
+│   │   │   ├── Statistics.jsx     # 统计信息
+│   │   │   └── CityInfoModal.jsx  # 城市详情弹窗
 │   │   ├── data/
-│   │   │   └── citiesDatabase.js  # 城市数据库（530+ 城市）
+│   │   │   ├── citiesDatabase.js  # 城市数据库（530+ 城市）
+│   │   │   └── cityDetails.js     # 城市详情数据库（40+ 城市）
 │   │   ├── hooks/
 │   │   │   └── useStatistics.js   # 统计逻辑
 │   │   ├── services/
-│   │   │   └── countryCache.js    # 国家缓存服务
+│   │   │   ├── countryCache.js    # 国家缓存服务
+│   │   │   └── weather.js         # 天气 API 服务
 │   │   ├── utils/
-│   │   │   ├── distance.js    # 距离计算
-│   │   │   └── gpx.js         # GPX 导入导出
+│   │   │   ├── distance.js        # 距离计算
+│   │   │   └── gpx.js             # GPX 导入导出
 │   │   ├── App.jsx
 │   │   └── main.jsx
 │   └── package.json
-├── server/                    # Node.js 后端
-│   ├── routes/               # API 路由
-│   │   ├── routes.js         # 路线 API
-│   │   └── geocoding.js      # 地理编码 API
-│   ├── db/                   # 数据库
-│   │   └── init.js           # 数据库初始化
+├── server/                        # Node.js 后端
+│   ├── routes/                   # API 路由
+│   │   ├── routes.js             # 路线 API
+│   │   └── geocoding.js          # 地理编码 API
+│   ├── db/                       # 数据库
+│   │   └── init.js               # 数据库初始化
 │   ├── index.js
 │   └── package.json
-├── auto-sync.sh              # 自动同步脚本
-├── Dockerfile                # Docker 配置
-├── docker-compose.yml        # Docker Compose 配置
-├── nginx.conf                # Nginx 配置
+├── auto-sync.sh                  # 自动同步脚本
+├── Dockerfile                    # Docker 配置
+├── docker-compose.yml            # Docker Compose 配置
+├── nginx.conf                    # Nginx 配置
 └── README.md
 ```
 
@@ -190,6 +204,13 @@ docker-compose up -d
 ```
 
 ## 更新日志
+
+### v1.5.0 (2026-06-25)
+- 添加城市详情功能（简介、人口、景点）
+- 添加天气信息集成（当前天气和未来预报）
+- 城市详情独立弹窗显示
+- 添加轨迹方向箭头
+- 移动端响应式优化
 
 ### v1.4.0 (2026-06-25)
 - 添加火车交通方式
