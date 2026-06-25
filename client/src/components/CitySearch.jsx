@@ -14,26 +14,71 @@ const CitySearch = ({ onAddCity, isFirst }) => {
 
   // 本地搜索函数
   const searchLocal = (query) => {
-    const q = query.toLowerCase();
-    return CITIES_DATABASE
-      .filter(city => 
-        city.name.toLowerCase().includes(q) || 
-        city.nameEn.toLowerCase().includes(q)
-      )
-      .slice(0, 10)
-      .map(city => ({
-        value: city.name,
-        label: (
-          <div className="search-option">
-            <span>{city.name} ({city.nameEn}) - {city.country}</span>
-          </div>
-        ),
-        data: {
-          name: city.name,
-          lat: city.lat,
-          lng: city.lng
-        }
-      }));
+    const q = query.trim();
+    
+    // 搜索结果并排序
+    const results = CITIES_DATABASE
+      .filter(city => {
+        const name = city.name.toLowerCase();
+        const nameEn = city.nameEn.toLowerCase();
+        const query = q.toLowerCase();
+        
+        // 完全匹配优先
+        if (name === query || nameEn === query) return true;
+        
+        // 开头匹配
+        if (name.startsWith(query) || nameEn.startsWith(query)) return true;
+        
+        // 包含匹配
+        if (name.includes(query) || nameEn.includes(query)) return true;
+        
+        // 拼音首字母匹配（简单实现）
+        const pinyinInitials = getInitials(city.nameEn);
+        if (pinyinInitials.includes(query)) return true;
+        
+        return false;
+      })
+      .sort((a, b) => {
+        const aName = a.name.toLowerCase();
+        const bName = b.name.toLowerCase();
+        const aNameEn = a.nameEn.toLowerCase();
+        const bNameEn = b.nameEn.toLowerCase();
+        const query = q.toLowerCase();
+        
+        // 完全匹配排最前
+        if (aName === query && bName !== query) return -1;
+        if (bName === query && aName !== query) return 1;
+        if (aNameEn === query && bNameEn !== query) return -1;
+        if (bNameEn === query && aNameEn !== query) return 1;
+        
+        // 开头匹配排前面
+        const aStartsWith = aName.startsWith(query) || aNameEn.startsWith(query);
+        const bStartsWith = bName.startsWith(query) || bNameEn.startsWith(query);
+        if (aStartsWith && !bStartsWith) return -1;
+        if (bStartsWith && !aStartsWith) return 1;
+        
+        return 0;
+      })
+      .slice(0, 12);
+    
+    return results.map(city => ({
+      value: city.name,
+      label: (
+        <div className="search-option">
+          <span>{city.name} ({city.nameEn}) - {city.country}</span>
+        </div>
+      ),
+      data: {
+        name: city.name,
+        lat: city.lat,
+        lng: city.lng
+      }
+    }));
+  };
+
+  // 获取英文名首字母
+  const getInitials = (nameEn) => {
+    return nameEn.split(/[\s-]+/).map(word => word[0]?.toLowerCase() || '').join('');
   };
 
   // Nominatim API 搜索
