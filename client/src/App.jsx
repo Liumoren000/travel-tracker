@@ -707,26 +707,34 @@ function App() {
     // 同时调用 Nominatim API
     try {
       const response = await axios.get(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(value)}&limit=10&accept-language=zh`,
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(value)}&limit=10&accept-language=zh-CN,zh`,
         { 
           timeout: 5000,
           headers: { 'User-Agent': 'TravelTracker/1.0' }
         }
       );
 
-      const apiResults = response.data.map(item => ({
-        value: item.display_name.split(',')[0],
-        label: (
-          <div className="search-option">
-            <span>{item.display_name.split(',').slice(0, 2).join(',')}</span>
-          </div>
-        ),
-        data: {
-          name: item.display_name.split(',')[0],
-          lat: parseFloat(item.lat),
-          lng: parseFloat(item.lon)
-        }
-      }));
+      const apiResults = response.data
+        .filter(item => item.display_name) // 过滤无效结果
+        .map(item => {
+          // 提取城市名称（第一部分通常是城市名）
+          const nameParts = item.display_name.split(',');
+          const cityName = nameParts[0].trim();
+          
+          return {
+            value: cityName,
+            label: (
+              <div className="search-option">
+                <span>{nameParts.slice(0, 2).join(',').trim()}</span>
+              </div>
+            ),
+            data: {
+              name: cityName,
+              lat: parseFloat(item.lat),
+              lng: parseFloat(item.lon)
+            }
+          };
+        });
 
       // 合并结果，API 结果优先
       const allResults = [...apiResults];
