@@ -641,8 +641,6 @@ function App() {
   };
 
   const handleEditSearch = useCallback(async (value) => {
-    console.log('搜索:', value);
-    
     if (!value || value.trim().length < 1) {
       setEditSearchOptions([]);
       return;
@@ -665,7 +663,7 @@ function App() {
         
         return false;
       })
-      .slice(0, 12)
+      .slice(0, 8)
       .map(city => ({
         value: city.name,
         label: (
@@ -680,11 +678,71 @@ function App() {
         }
       }));
 
-    console.log('本地结果:', localResults.length);
-    
-    // 显示本地结果
+    // 立即显示本地结果
     setEditSearchOptions(localResults);
-    setEditSearchLoading(false);
+
+    // 同时调用 Nominatim API（全球覆盖）
+    try {
+      const response = await axios.get(
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(value)}&limit=10&accept-language=zh-CN,zh&addressdetails=1`,
+        { 
+          timeout: 5000,
+          headers: { 'User-Agent': 'TravelTracker/1.0' }
+        }
+      );
+
+      const apiResults = response.data
+        .filter(item => item.display_name)
+        .map(item => {
+          let cityName = '';
+          
+          if (item.address) {
+            cityName = item.address.city || 
+                       item.address.town || 
+                       item.address.village || 
+                       item.address.county || 
+                       item.address.state || '';
+          }
+          
+          if (!cityName) {
+            const nameParts = item.display_name.split(',');
+            cityName = nameParts[0].trim();
+          }
+          
+          return {
+            value: cityName,
+            label: (
+              <div className="search-option">
+                <span>{cityName}</span>
+              </div>
+            ),
+            data: {
+              name: cityName,
+              lat: parseFloat(item.lat),
+              lng: parseFloat(item.lon)
+            }
+          };
+        })
+        .filter(item => item.value && !item.value.match(/[а-яА-Я]/));
+
+      // 合并结果，API 结果优先
+      const allResults = [...apiResults];
+      const existingNames = new Set(apiResults.map(r => r.value));
+      
+      for (const result of localResults) {
+        if (!existingNames.has(result.value) && allResults.length < 15) {
+          allResults.push(result);
+          existingNames.add(result.value);
+        }
+      }
+
+      setEditSearchOptions(allResults);
+    } catch (error) {
+      console.warn('API 搜索失败，使用本地结果:', error.message);
+      // API 失败时保留本地结果
+    } finally {
+      setEditSearchLoading(false);
+    }
   }, []);
 
   const handleEditSelectCity = (value, option) => {
