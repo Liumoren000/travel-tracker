@@ -778,7 +778,7 @@ function App() {
   };
 
   const handleEditSelectCity = (value, option) => {
-    if (editingRoute) {
+    if (editingRoute && option && option.data) {
       setEditingRoute(prev => ({
         ...prev,
         cities: [...prev.cities, option.data]
@@ -786,7 +786,10 @@ function App() {
       message.success(`已添加城市: ${option.data.name}`);
     }
     setEditSearchText('');
-    setEditSearchOptions([]);
+    // 延迟清空选项，避免闪烁
+    setTimeout(() => {
+      setEditSearchOptions([]);
+    }, 100);
   };
 
   const displayRoute = editingRoute || selectedRouteDetail;
