@@ -648,14 +648,45 @@ function App() {
 
     setEditSearchLoading(true);
     
-    // 本地搜索
+    // 本地搜索（与 CitySearch 组件相同的搜索逻辑）
+    const q = value.trim().toLowerCase();
     const localResults = CITIES_DATABASE
       .filter(city => {
-        const q = value.toLowerCase();
-        return city.name.toLowerCase().includes(q) || 
-               city.nameEn.toLowerCase().includes(q);
+        const name = city.name.toLowerCase();
+        const nameEn = city.nameEn.toLowerCase();
+        
+        // 完全匹配优先
+        if (name === q || nameEn === q) return true;
+        
+        // 开头匹配
+        if (name.startsWith(q) || nameEn.startsWith(q)) return true;
+        
+        // 包含匹配
+        if (name.includes(q) || nameEn.includes(q)) return true;
+        
+        return false;
       })
-      .slice(0, 8)
+      .sort((a, b) => {
+        const aName = a.name.toLowerCase();
+        const bName = b.name.toLowerCase();
+        const aNameEn = a.nameEn.toLowerCase();
+        const bNameEn = b.nameEn.toLowerCase();
+        
+        // 完全匹配排最前
+        if (aName === q && bName !== q) return -1;
+        if (bName === q && aName !== q) return 1;
+        if (aNameEn === q && bNameEn !== q) return -1;
+        if (bNameEn === q && aNameEn !== q) return 1;
+        
+        // 开头匹配排前面
+        const aStartsWith = aName.startsWith(q) || aNameEn.startsWith(q);
+        const bStartsWith = bName.startsWith(q) || bNameEn.startsWith(q);
+        if (aStartsWith && !bStartsWith) return -1;
+        if (bStartsWith && !aStartsWith) return 1;
+        
+        return 0;
+      })
+      .slice(0, 12)
       .map(city => ({
         value: city.name,
         label: (
