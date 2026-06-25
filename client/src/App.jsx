@@ -316,20 +316,99 @@ function App() {
     setEditingRouteIndex(null);
   };
 
-  const handleSaveEdit = () => {
+  const handleSaveEdit = async () => {
     if (!editingRoute || editingRoute.cities.length < 2) {
       message.warning('线路至少需要2个城市');
       return;
     }
 
-    const newName = `${editingRoute.cities[0].name} → ${editingRoute.cities[editingRoute.cities.length - 1].name}`;
-    const updatedRoute = { ...editingRoute, name: newName };
+    setLoading(true);
+    try {
+      const newName = `${editingRoute.cities[0].name} → ${editingRoute.cities[editingRoute.cities.length - 1].name}`;
+      
+      // 重新生成轨迹坐标
+      let allCoords = [];
+      const segments = [];
 
-    setRoutes(prev => prev.map((r, i) => i === editingRouteIndex ? updatedRoute : r));
-    setSelectedRouteDetail(updatedRoute);
-    setEditingRoute(null);
-    setEditingRouteIndex(null);
-    message.success('线路已更新');
+      for (let i = 0; i < editingRoute.cities.length - 1; i++) {
+        const from = editingRoute.cities[i];
+        const to = editingRoute.cities[i + 1];
+        const mode = to.mode || 'driving';
+
+        if (mode === 'flight') {
+          // Flight: straight line
+          const segCoords = [];
+          const steps = 20;
+          for (let s = 0; s <= steps; s++) {
+            const lat = from.lat + (to.lat - from.lat) * (s / steps);
+            const lng = from.lng + (to.lng - from.lng) * (s / steps);
+            segCoords.push([lat, lng]);
+          }
+          if (i === 0) {
+            allCoords = [...segCoords];
+          } else {
+            allCoords = [...allCoords, ...segCoords.slice(1)];
+          }
+          segments.push({ from: from.name, to: to.name, mode, coordinates: segCoords });
+        } else {
+          // Ground transport: use OSRM with fallback to straight line
+          try {
+            const profile = mode === 'walking' ? 'foot' : 'driving';
+            const coordinates = `${from.lng},${from.lat};${to.lng},${to.lat}`;
+            const response = await axios.get(
+              `https://router.project-osrm.org/route/v1/${profile}/${coordinates}?overview=full&geometries=geojson`,
+              { timeout: 10000 }
+            );
+
+            if (response.data.routes && response.data.routes.length > 0) {
+              const route = response.data.routes[0];
+              const segCoords = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
+              if (i === 0) {
+                allCoords = [...segCoords];
+              } else {
+                allCoords = [...allCoords, ...segCoords.slice(1)];
+              }
+              segments.push({ from: from.name, to: to.name, mode, coordinates: segCoords });
+            } else {
+              throw new Error('No route found');
+            }
+          } catch (err) {
+            // Fallback to straight line
+            const segCoords = [];
+            const steps = 20;
+            for (let s = 0; s <= steps; s++) {
+              const lat = from.lat + (to.lat - from.lat) * (s / steps);
+              const lng = from.lng + (to.lng - from.lng) * (s / steps);
+              segCoords.push([lat, lng]);
+            }
+            if (i === 0) {
+              allCoords = [...segCoords];
+            } else {
+              allCoords = [...allCoords, ...segCoords.slice(1)];
+            }
+            segments.push({ from: from.name, to: to.name, mode, coordinates: segCoords });
+          }
+        }
+      }
+
+      const updatedRoute = { 
+        ...editingRoute, 
+        name: newName,
+        coordinates: allCoords,
+        segments: segments
+      };
+
+      setRoutes(prev => prev.map((r, i) => i === editingRouteIndex ? updatedRoute : r));
+      setSelectedRouteDetail(updatedRoute);
+      setEditingRoute(null);
+      setEditingRouteIndex(null);
+      message.success('线路已更新');
+    } catch (error) {
+      console.error('更新线路失败:', error);
+      message.error('更新线路失败，请重试');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleEditName = (name) => {
