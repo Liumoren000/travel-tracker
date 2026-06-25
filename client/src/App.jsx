@@ -951,13 +951,18 @@ function App() {
                   <AutoComplete
                     value={editSearchText}
                     options={editSearchOptions}
-                    onSearch={handleEditSearch}
+                    onSearch={(val) => {
+                      setEditSearchText(val);
+                      handleEditSearch(val);
+                    }}
                     onSelect={handleEditSelectCity}
-                    onChange={setEditSearchText}
+                    onChange={(val) => {
+                      setEditSearchText(val);
+                      if (!val) setEditSearchOptions([]);
+                    }}
                     style={{ width: '100%' }}
-                    filterOption={(inputValue, option) =>
-                      option.value.toUpperCase().indexOf(inputValue.toUpperCase()) !== -1
-                    }
+                    filterOption={false}
+                    notFoundContent={editSearchLoading ? '搜索中...' : '无匹配城市'}
                   >
                     <Input
                       placeholder="搜索并添加城市..."
