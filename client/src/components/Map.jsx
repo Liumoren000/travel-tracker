@@ -3,6 +3,7 @@ import { Button, message, Dropdown, Space } from 'antd';
 import { DownloadOutlined, EnvironmentOutlined, MenuFoldOutlined, MenuUnfoldOutlined, GlobalOutlined } from '@ant-design/icons';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet-polylinedecorator';
 import { calculateRouteDistance, formatDistance, calculateSegmentDistances } from '../utils/distance';
 
 // 地图样式配置
@@ -201,6 +202,29 @@ const Map = ({
                 dashArray: isFlight ? '10, 8' : isTrain ? '8, 4' : null
               }).addTo(mapInstanceRef.current);
 
+              // 添加箭头指示方向
+              if (segment.coordinates.length >= 2) {
+                const decorator = L.polylineDecorator(segPolyline, {
+                  patterns: [
+                    {
+                      offset: '50%',
+                      repeat: 0,
+                      symbol: L.Symbol.arrowHead({
+                        pixelSize: 12,
+                        polygon: false,
+                        pathOptions: {
+                          color: color,
+                          weight: isSelected ? 6 : 4,
+                          opacity: isOtherSelected ? 0.3 : 0.8,
+                          fillOpacity: 1
+                        }
+                      })
+                    }
+                  ]
+                }).addTo(mapInstanceRef.current);
+                layersRef.current.push(decorator);
+              }
+
               const modeLabel = isFlight ? '✈️ 飞行' : isTrain ? '🚂 火车' : segment.mode === 'walking' ? '🚶 步行' : '🚗 驾车';
               const segDistance = segmentDistances[segIndex] ? segmentDistances[segIndex].formatted : '';
               
@@ -223,6 +247,29 @@ const Map = ({
               opacity: isOtherSelected ? 0.3 : 0.8,
               dashArray: isFlight ? '10, 8' : isTrain ? '8, 4' : null
             }).addTo(mapInstanceRef.current);
+
+            // 添加箭头指示方向
+            if (route.coordinates.length >= 2) {
+              const decorator = L.polylineDecorator(polyline, {
+                patterns: [
+                  {
+                    offset: '50%',
+                    repeat: 0,
+                    symbol: L.Symbol.arrowHead({
+                      pixelSize: 12,
+                      polygon: false,
+                      pathOptions: {
+                        color: color,
+                        weight: isSelected ? 6 : 4,
+                        opacity: isOtherSelected ? 0.3 : 0.8,
+                        fillOpacity: 1
+                      }
+                    })
+                  }
+                ]
+              }).addTo(mapInstanceRef.current);
+              layersRef.current.push(decorator);
+            }
 
             const modeLabel = isFlight ? '✈️ 飞行' : isTrain ? '🚂 火车' : route.mode === 'walking' ? '🚶 步行' : '🚗 驾车';
             polyline.bindPopup(`
@@ -322,6 +369,29 @@ const Map = ({
               dashArray: isFlight ? '10, 8' : isTrain ? '8, 4' : null
             }).addTo(mapInstanceRef.current);
 
+            // 添加箭头指示方向
+            if (segment.coordinates.length >= 2) {
+              const decorator = L.polylineDecorator(segPolyline, {
+                patterns: [
+                  {
+                    offset: '50%',
+                    repeat: 0,
+                    symbol: L.Symbol.arrowHead({
+                      pixelSize: 12,
+                      polygon: false,
+                      pathOptions: {
+                        color: '#1890ff',
+                        weight: 5,
+                        opacity: 0.9,
+                        fillOpacity: 1
+                      }
+                    })
+                  }
+                ]
+              }).addTo(mapInstanceRef.current);
+              layersRef.current.push(decorator);
+            }
+
             const modeLabel = isFlight ? '✈️ 飞行' : isTrain ? '🚂 火车' : segment.mode === 'walking' ? '🚶 步行' : '🚗 驾车';
             const segDistance = currentSegmentDistances[segIndex] ? currentSegmentDistances[segIndex].formatted : '';
             
@@ -344,6 +414,29 @@ const Map = ({
             opacity: 0.9,
             dashArray: isFlight ? '10, 8' : isTrain ? '8, 4' : null
           }).addTo(mapInstanceRef.current);
+
+          // 添加箭头指示方向
+          if (currentRoute.coordinates.length >= 2) {
+            const decorator = L.polylineDecorator(polyline, {
+              patterns: [
+                {
+                  offset: '50%',
+                  repeat: 0,
+                  symbol: L.Symbol.arrowHead({
+                    pixelSize: 12,
+                    polygon: false,
+                    pathOptions: {
+                      color: '#1890ff',
+                      weight: 5,
+                      opacity: 0.9,
+                      fillOpacity: 1
+                    }
+                  })
+                }
+              ]
+            }).addTo(mapInstanceRef.current);
+            layersRef.current.push(decorator);
+          }
 
           const modeLabel = isFlight ? '✈️ 飞行' : isTrain ? '🚂 火车' : currentRoute.mode === 'walking' ? '🚶 步行' : '🚗 驾车';
           polyline.bindPopup(`
