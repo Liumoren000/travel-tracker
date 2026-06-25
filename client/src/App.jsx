@@ -641,50 +641,28 @@ function App() {
   };
 
   const handleEditSearch = async (value) => {
-    if (!value || value.length < 1) {
+    if (!value || value.trim().length < 1) {
       setEditSearchOptions([]);
       return;
     }
 
     setEditSearchLoading(true);
     
-    // 本地搜索（与 CitySearch 组件相同的搜索逻辑）
-    const q = value.trim().toLowerCase();
+    // 本地搜索
+    const q = value.trim();
     const localResults = CITIES_DATABASE
       .filter(city => {
-        const name = city.name.toLowerCase();
+        const name = city.name;
         const nameEn = city.nameEn.toLowerCase();
+        const query = q.toLowerCase();
         
-        // 完全匹配优先
-        if (name === q || nameEn === q) return true;
+        // 中文名称匹配（不转大小写）
+        if (name.includes(q)) return true;
         
-        // 开头匹配
-        if (name.startsWith(q) || nameEn.startsWith(q)) return true;
-        
-        // 包含匹配
-        if (name.includes(q) || nameEn.includes(q)) return true;
+        // 英文名称匹配
+        if (nameEn.includes(query)) return true;
         
         return false;
-      })
-      .sort((a, b) => {
-        const aName = a.name.toLowerCase();
-        const bName = b.name.toLowerCase();
-        const aNameEn = a.nameEn.toLowerCase();
-        const bNameEn = b.nameEn.toLowerCase();
-        
-        // 完全匹配排最前
-        if (aName === q && bName !== q) return -1;
-        if (bName === q && aName !== q) return 1;
-        if (aNameEn === q && bNameEn !== q) return -1;
-        if (bNameEn === q && aNameEn !== q) return 1;
-        
-        // 开头匹配排前面
-        const aStartsWith = aName.startsWith(q) || aNameEn.startsWith(q);
-        const bStartsWith = bName.startsWith(q) || bNameEn.startsWith(q);
-        if (aStartsWith && !bStartsWith) return -1;
-        if (bStartsWith && !aStartsWith) return 1;
-        
-        return 0;
       })
       .slice(0, 12)
       .map(city => ({
