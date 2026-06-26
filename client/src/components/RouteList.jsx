@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { List, Button, Tag, Popconfirm, message, Radio, Select } from 'antd';
 import { DeleteOutlined, EnvironmentOutlined, PlusOutlined, ClearOutlined, CarOutlined, GlobalOutlined } from '@ant-design/icons';
+import { useLanguage } from '../hooks/useLanguage';
 
 const RouteList = ({ 
   cities, 
@@ -13,9 +14,11 @@ const RouteList = ({
   hasCurrentRoute,
   onCityModeChange
 }) => {
+  const { t } = useLanguage();
+
   const handleGenerate = () => {
     if (cities.length < 2) {
-      message.warning('请至少添加两个城市');
+      message.warning(t('pleaseAddTwoCities'));
       return;
     }
     onGenerateRoute();
@@ -23,7 +26,7 @@ const RouteList = ({
 
   const handleAddToMap = () => {
     if (!hasCurrentRoute) {
-      message.warning('请先生成轨迹');
+      message.warning(t('pleaseGenerateRoute'));
       return;
     }
     onAddToMap();
@@ -31,27 +34,27 @@ const RouteList = ({
 
   const handleSave = () => {
     if (cities.length < 2) {
-      message.warning('请至少添加两个城市');
+      message.warning(t('pleaseAddTwoCities'));
       return;
     }
     onSaveRoute();
   };
 
   const modeOptions = [
-    { value: 'driving', label: '🚗 驾车' },
-    { value: 'train', label: '🚂 火车' },
-    { value: 'flight', label: '✈️ 飞机' },
-    { value: 'walking', label: '🚶 步行' }
+    { value: 'driving', label: `🚗 ${t('driving')}` },
+    { value: 'train', label: `🚂 ${t('train')}` },
+    { value: 'flight', label: `✈️ ${t('flight')}` },
+    { value: 'walking', label: `🚶 ${t('walking')}` }
   ];
 
   return (
     <div className="route-list">
       <div className="route-header">
-        <h3>当前行程</h3>
+        <h3>{t('currentRoute')}</h3>
         <div className="route-header-tags">
-          <Tag color="blue">{cities.length} 个城市</Tag>
+          <Tag color="blue">{cities.length} {t('cities')}</Tag>
           {cities.length > 0 && (
-            <Button size="small" icon={<ClearOutlined />} onClick={onReset}>清空</Button>
+            <Button size="small" icon={<ClearOutlined />} onClick={onReset}>{t('clear')}</Button>
           )}
         </div>
       </div>
@@ -65,8 +68,8 @@ const RouteList = ({
               <Popconfirm
                 title="确定移除这个城市吗？"
                 onConfirm={() => onRemoveCity(index)}
-                okText="确定"
-                cancelText="取消"
+                okText={t('confirm')}
+                cancelText={t('cancel')}
               >
                 <Button type="text" danger icon={<DeleteOutlined />} size="small" />
               </Popconfirm>
@@ -102,7 +105,7 @@ const RouteList = ({
                 <div>
                   {index > 0 && (
                     <div className="mode-hint">
-                      从 {cities[index - 1].name} 出发
+                      {t('from')} {cities[index - 1].name} {t('depart')}
                     </div>
                   )}
                   <div>{city.lat.toFixed(4)}, {city.lng.toFixed(4)}</div>
@@ -121,7 +124,7 @@ const RouteList = ({
             loading={loading}
             block
           >
-            生成轨迹
+            {t('generateRoute')}
           </Button>
           {hasCurrentRoute && (
             <Button
@@ -132,7 +135,7 @@ const RouteList = ({
               style={{ marginTop: 8 }}
               block
             >
-              添加到地图
+              {t('addToMap')}
             </Button>
           )}
           <Button
@@ -140,7 +143,7 @@ const RouteList = ({
             style={{ marginTop: 8 }}
             block
           >
-            保存路线
+            {t('saveRoute')}
           </Button>
         </div>
       )}

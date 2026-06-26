@@ -3,6 +3,7 @@ import { Input, Modal, Radio, Spin } from 'antd';
 import { SearchOutlined, CarOutlined, GlobalOutlined, SendOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import { CITIES_DATABASE } from '../data/citiesDatabase';
+import { useLanguage } from '../hooks/useLanguage';
 
 const CitySearch = ({ onAddCity, isFirst }) => {
   const [searchText, setSearchText] = useState('');
@@ -13,6 +14,7 @@ const CitySearch = ({ onAddCity, isFirst }) => {
   const [loading, setLoading] = useState(false);
   const searchTimeoutRef = useRef(null);
   const abortControllerRef = useRef(null);
+  const { t } = useLanguage();
 
   // 搜索城市（本地 + API）
   const handleSearch = useCallback((value) => {
@@ -112,7 +114,7 @@ const CitySearch = ({ onAddCity, isFirst }) => {
         setOptions(allResults);
       } catch (error) {
         if (!axios.isCancel(error)) {
-          console.warn('API 搜索失败:', error.message);
+          console.warn('API search failed:', error.message);
         }
       } finally {
         if (!abortController.signal.aborted) {
@@ -153,7 +155,7 @@ const CitySearch = ({ onAddCity, isFirst }) => {
     <div className="city-search">
       <div style={{ position: 'relative' }}>
         <Input
-          placeholder="输入城市名称搜索（支持全球城市）..."
+          placeholder={t('searchPlaceholder')}
           suffix={loading ? <Spin size="small" /> : <SearchOutlined style={{ cursor: 'pointer' }} />}
           value={searchText}
           onChange={(e) => handleSearch(e.target.value)}
@@ -203,19 +205,19 @@ const CitySearch = ({ onAddCity, isFirst }) => {
       </div>
 
       <Modal
-        title="选择交通方式"
+        title={t('selectTransport')}
         open={modalVisible}
         onOk={handleConfirm}
         onCancel={handleCancel}
-        okText="添加"
-        cancelText="取消"
+        okText={t('add')}
+        cancelText={t('cancel')}
       >
         <div style={{ marginBottom: 12 }}>
           <div style={{ marginBottom: 8, fontWeight: 500 }}>
-            添加城市：{selectedCity?.name}
+            {t('addCity')}：{selectedCity?.name}
           </div>
           <div style={{ color: '#666', marginBottom: 12, fontSize: 12 }}>
-            选择从前一个城市到达此城市的交通方式
+            {t('selectTransportDesc')}
           </div>
           <Radio.Group 
             value={selectedMode} 
@@ -223,16 +225,16 @@ const CitySearch = ({ onAddCity, isFirst }) => {
             style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
           >
             <Radio value="driving">
-              <CarOutlined /> 驾车 - 沿道路行驶
+              <CarOutlined /> {t('driving')}
             </Radio>
             <Radio value="train">
-              <SendOutlined /> 火车 - 铁路路线
+              <SendOutlined /> {t('train')}
             </Radio>
             <Radio value="flight">
-              <GlobalOutlined /> 飞机 - 直线飞行
+              <GlobalOutlined /> {t('flight')}
             </Radio>
             <Radio value="walking">
-              🚶 步行 - 步行路线
+              🚶 {t('walking')}
             </Radio>
           </Radio.Group>
         </div>
