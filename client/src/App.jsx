@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Layout, message, Modal, Input, Button, Tag, List, Popconfirm, AutoComplete, Radio, Space, Select } from 'antd';
-import { EnvironmentOutlined, DeleteOutlined, ClearOutlined, EyeOutlined, PlusOutlined, EditOutlined, SaveOutlined, CloseOutlined, SearchOutlined, ArrowUpOutlined, ArrowDownOutlined, CarOutlined, GlobalOutlined, SendOutlined, MenuFoldOutlined, MenuUnfoldOutlined, UploadOutlined, DownloadOutlined } from '@ant-design/icons';
+import { EnvironmentOutlined, DeleteOutlined, ClearOutlined, EyeOutlined, PlusOutlined, EditOutlined, SaveOutlined, CloseOutlined, SearchOutlined, ArrowUpOutlined, ArrowDownOutlined, CarOutlined, GlobalOutlined, SendOutlined, MenuFoldOutlined, MenuUnfoldOutlined, UploadOutlined, DownloadOutlined, BulbOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import Map from './components/Map';
 import CitySearch from './components/CitySearch';
@@ -9,6 +9,8 @@ import History from './components/History';
 import Statistics from './components/Statistics';
 import CityInfoModal from './components/CityInfoModal';
 import { useStatistics } from './hooks/useStatistics';
+import { useTheme } from './hooks/useTheme.jsx';
+import { useLanguage } from './hooks/useLanguage.jsx';
 import { downloadGPX, importGPXFile } from './utils/gpx';
 import { generateAllFlightLinks } from './utils/flightLinks';
 import { CITIES_DATABASE } from './data/citiesDatabase';
@@ -114,6 +116,8 @@ function App() {
   const [siderCollapsed, setSiderCollapsed] = useState(false);
   const [cityInfoVisible, setCityInfoVisible] = useState(false);
   const [selectedCityInfo, setSelectedCityInfo] = useState(null);
+  const { isDark, toggleTheme } = useTheme();
+  const { language, toggleLanguage, t } = useLanguage();
   const fileInputRef = useRef(null);
 
   useEffect(() => {
@@ -796,7 +800,24 @@ function App() {
         <div className="sider-content">
           <div className="app-title">
             <EnvironmentOutlined />
-            <h1>自由轨迹</h1>
+            <h1>{t('appName')}</h1>
+            <div style={{ display: 'flex', gap: '4px', marginLeft: 'auto' }}>
+              <Button 
+                className="theme-toggle-btn"
+                icon={isDark ? '☀️' : '🌙'}
+                onClick={toggleTheme}
+                size="small"
+                title={isDark ? t('lightMode') : t('darkMode')}
+              />
+              <Button 
+                className="theme-toggle-btn"
+                onClick={toggleLanguage}
+                size="small"
+                title={language === 'zh' ? 'Switch to English' : '切换到中文'}
+              >
+                {language === 'zh' ? 'EN' : '中'}
+              </Button>
+            </div>
           </div>
 
           <CitySearch onAddCity={handleAddCity} isFirst={cities.length === 0} />

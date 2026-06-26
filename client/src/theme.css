@@ -1,0 +1,352 @@
+/* 深色模式样式 */
+:root,
+[data-theme="light"] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f5f5f5;
+  --bg-tertiary: #fafafa;
+  --text-primary: #333333;
+  --text-secondary: #666666;
+  --text-tertiary: #999999;
+  --border-color: #f0f0f0;
+  --border-color-dark: #d9d9d9;
+  --shadow-color: rgba(0, 0, 0, 0.12);
+  --shadow-color-heavy: rgba(0, 0, 0, 0.15);
+  --primary-color: #1890ff;
+  --primary-bg: #e6f7ff;
+  --success-color: #52c41a;
+  --warning-color: #fa8c16;
+  --error-color: #f5222d;
+  --hover-bg: #f5f5f5;
+  --active-bg: #e6f7ff;
+}
+
+[data-theme="dark"] {
+  --bg-primary: #1f1f1f;
+  --bg-secondary: #2d2d2d;
+  --bg-tertiary: #333333;
+  --text-primary: #ffffff;
+  --text-secondary: #cccccc;
+  --text-tertiary: #999999;
+  --border-color: #3d3d3d;
+  --border-color-dark: #4d4d4d;
+  --shadow-color: rgba(0, 0, 0, 0.3);
+  --shadow-color-heavy: rgba(0, 0, 0, 0.4);
+  --primary-color: #40a9ff;
+  --primary-bg: #111d2c;
+  --success-color: #73d13d;
+  --warning-color: #ffc53d;
+  --error-color: #ff4d4f;
+  --hover-bg: #333333;
+  --active-bg: #111d2c;
+}
+
+/* 应用深色模式 */
+[data-theme="dark"] body {
+  background-color: var(--bg-secondary);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .app-sider {
+  background: var(--bg-primary) !important;
+  border-right-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .app-title {
+  border-bottom-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .app-title h1 {
+  color: var(--primary-color);
+}
+
+[data-theme="dark"] .app-title .anticon {
+  color: var(--primary-color);
+}
+
+[data-theme="dark"] .route-header {
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .route-header h3 {
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .history-panel {
+  border-top-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .history-header h3 {
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .route-list-item:hover {
+  background-color: var(--hover-bg) !important;
+}
+
+[data-theme="dark"] .route-list-item.route-selected {
+  background-color: var(--active-bg) !important;
+}
+
+[data-theme="dark"] .map-routes {
+  border-top-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .map-routes-header h3 {
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .route-detail-header {
+  border-bottom-color: var(--border-color) !important;
+}
+
+/* Ant Design 深色模式覆盖 */
+[data-theme="dark"] .ant-layout {
+  background: var(--bg-secondary) !important;
+}
+
+[data-theme="dark"] .ant-layout-sider {
+  background: var(--bg-primary) !important;
+}
+
+[data-theme="dark"] .ant-input {
+  background: var(--bg-tertiary) !important;
+  border-color: var(--border-color-dark) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .ant-input::placeholder {
+  color: var(--text-tertiary) !important;
+}
+
+[data-theme="dark"] .ant-btn-default {
+  background: var(--bg-tertiary) !important;
+  border-color: var(--border-color-dark) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .ant-btn-default:hover {
+  background: var(--hover-bg) !important;
+  border-color: var(--primary-color) !important;
+  color: var(--primary-color) !important;
+}
+
+[data-theme="dark"] .ant-tag {
+  background: var(--bg-tertiary) !important;
+  border-color: var(--border-color-dark) !important;
+  color: var(--text-secondary) !important;
+}
+
+[data-theme="dark"] .ant-tag-blue {
+  background: var(--primary-bg) !important;
+  border-color: var(--primary-color) !important;
+  color: var(--primary-color) !important;
+}
+
+[data-theme="dark"] .ant-tag-green {
+  background: #162312 !important;
+  border-color: var(--success-color) !important;
+  color: var(--success-color) !important;
+}
+
+[data-theme="dark"] .ant-tag-red {
+  background: #2a1215 !important;
+  border-color: var(--error-color) !important;
+  color: var(--error-color) !important;
+}
+
+[data-theme="dark"] .ant-modal-content {
+  background: var(--bg-primary) !important;
+}
+
+[data-theme="dark"] .ant-modal-header {
+  background: var(--bg-primary) !important;
+  border-bottom-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .ant-modal-title {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .ant-modal-close-x {
+  color: var(--text-secondary) !important;
+}
+
+[data-theme="dark"] .ant-modal-footer {
+  border-top-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .ant-list-item {
+  border-bottom-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .ant-list-item-meta-title {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .ant-list-item-meta-description {
+  color: var(--text-secondary) !important;
+}
+
+[data-theme="dark"] .ant-empty-description {
+  color: var(--text-tertiary) !important;
+}
+
+[data-theme="dark"] .ant-spin-dot-item {
+  background: var(--primary-color) !important;
+}
+
+[data-theme="dark"] .ant-select-selector {
+  background: var(--bg-tertiary) !important;
+  border-color: var(--border-color-dark) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .ant-select-arrow {
+  color: var(--text-tertiary) !important;
+}
+
+[data-theme="dark"] .ant-radio-button-wrapper {
+  background: var(--bg-tertiary) !important;
+  border-color: var(--border-color-dark) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .ant-radio-button-wrapper:hover {
+  color: var(--primary-color) !important;
+}
+
+[data-theme="dark"] .ant-radio-button-wrapper-checked {
+  background: var(--primary-bg) !important;
+  border-color: var(--primary-color) !important;
+  color: var(--primary-color) !important;
+}
+
+[data-theme="dark"] .ant-popconfirm-message-title {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .ant-popconfirm-description {
+  color: var(--text-secondary) !important;
+}
+
+/* 统计栏深色模式 */
+[data-theme="dark"] .statistics-container {
+  background: rgba(31, 31, 31, 0.95) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+[data-theme="dark"] .statistics-item-sm {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .statistics-item-sm .anticon {
+  color: var(--primary-color) !important;
+}
+
+[data-theme="dark"] .statistics-country {
+  background: var(--bg-tertiary) !important;
+}
+
+[data-theme="dark"] .statistics-country-name {
+  color: var(--text-primary) !important;
+}
+
+/* 下拉菜单深色模式 */
+[data-theme="dark"] .search-option {
+  color: var(--text-primary);
+}
+
+/* 城市搜索下拉 */
+[data-theme="dark"] .ant-select-dropdown {
+  background: var(--bg-primary) !important;
+  border-color: var(--border-color-dark) !important;
+}
+
+[data-theme="dark"] .ant-select-item {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .ant-select-item-option-active {
+  background: var(--hover-bg) !important;
+}
+
+[data-theme="dark"] .ant-select-item-option-selected {
+  background: var(--active-bg) !important;
+}
+
+/* 消息提示深色模式 */
+[data-theme="dark"] .ant-message-notice-content {
+  background: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* 弹出框深色模式 */
+[data-theme="dark"] .ant-popover-inner {
+  background: var(--bg-primary) !important;
+}
+
+[data-theme="dark"] .ant-popover-inner-content {
+  color: var(--text-primary) !important;
+}
+
+/* 滑块深色模式 */
+[data-theme="dark"] .ant-slider-rail {
+  background: var(--border-color-dark) !important;
+}
+
+[data-theme="dark"] .ant-slider-track {
+  background: var(--primary-color) !important;
+}
+
+[data-theme="dark"] .ant-slider-handle {
+  border-color: var(--primary-color) !important;
+  background: var(--bg-primary) !important;
+}
+
+/* Leaflet 弹出窗口深色模式 */
+[data-theme="dark"] .leaflet-popup-content-wrapper {
+  background: var(--bg-primary) !important;
+  color: var(--text-primary) !important;
+  box-shadow: 0 3px 14px rgba(0, 0, 0, 0.4) !important;
+}
+
+[data-theme="dark"] .leaflet-popup-tip {
+  background: var(--bg-primary) !important;
+}
+
+[data-theme="dark"] .leaflet-popup-close-button {
+  color: var(--text-secondary) !important;
+}
+
+/* 切换按钮样式 */
+.theme-toggle-btn {
+  background: rgba(255, 255, 255, 0.95);
+  border: 1px solid #d9d9d9;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+[data-theme="dark"] .theme-toggle-btn {
+  background: rgba(31, 31, 31, 0.95);
+  border-color: var(--border-color-dark);
+  color: var(--text-primary);
+}
+
+.theme-toggle-btn:hover {
+  background: #fff;
+  border-color: #1890ff;
+  color: #1890ff;
+}
+
+[data-theme="dark"] .theme-toggle-btn:hover {
+  background: var(--hover-bg);
+  border-color: var(--primary-color);
+  color: var(--primary-color);
+}
