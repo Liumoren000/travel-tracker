@@ -11,6 +11,7 @@ import CityInfoModal from './components/CityInfoModal';
 import { useStatistics } from './hooks/useStatistics';
 import { downloadGPX, importGPXFile } from './utils/gpx';
 import { estimateRouteCost, formatCost } from './utils/cost';
+import { generateAllFlightLinks } from './utils/flightLinks';
 import { CITIES_DATABASE } from './data/citiesDatabase';
 import './App.css';
 
@@ -1039,28 +1040,91 @@ function App() {
             {/* 费用估算 */}
             {displayRoute.cities && displayRoute.cities.length >= 2 && (() => {
               const costEstimate = estimateRouteCost(displayRoute.cities);
-              return costEstimate.total > 0 ? (
-                <div style={{ 
-                  marginBottom: 12, 
-                  padding: '8px 12px', 
-                  background: '#fff7e6', 
-                  borderRadius: 6,
-                  border: '1px solid #ffd591'
-                }}>
-                  <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 4 }}>
-                    💰 预估费用: <span style={{ color: '#fa8c16', fontSize: 16 }}>{formatCost(costEstimate.total)}</span>
-                  </div>
-                  <div style={{ fontSize: 11, color: '#999' }}>
-                    {costEstimate.segments.map((seg, i) => (
-                      <span key={i}>
-                        {i > 0 && ' + '}
-                        {seg.mode === 'flight' ? '✈️' : seg.mode === 'train' ? '🚂' : seg.mode === 'walking' ? '🚶' : '🚗'}
-                        {formatCost(seg.cost)}
-                      </span>
-                    ))}
-                  </div>
+              
+              // 查找飞机段
+              const flightSegments = [];
+              for (let i = 0; i < displayRoute.cities.length - 1; i++) {
+                const to = displayRoute.cities[i + 1];
+                if (to.mode === 'flight') {
+                  flightSegments.push({
+                    from: displayRoute.cities[i].name,
+                    to: to.name
+                  });
+                }
+              }
+              
+              return (
+                <div style={{ marginBottom: 12 }}>
+                  {/* 费用估算 */}
+                  {costEstimate.total > 0 && (
+                    <div style={{ 
+                      padding: '8px 12px', 
+                      background: '#fff7e6', 
+                      borderRadius: 6,
+                      border: '1px solid #ffd591',
+                      marginBottom: flightSegments.length > 0 ? 8 : 0
+                    }}>
+                      <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 4 }}>
+                        💰 预估费用: <span style={{ color: '#fa8c16', fontSize: 16 }}>{formatCost(costEstimate.total)}</span>
+                      </div>
+                      <div style={{ fontSize: 11, color: '#999' }}>
+                        {costEstimate.segments.map((seg, i) => (
+                          <span key={i}>
+                            {i > 0 && ' + '}
+                            {seg.mode === 'flight' ? '✈️' : seg.mode === 'train' ? '🚂' : seg.mode === 'walking' ? '🚶' : '🚗'}
+                            {formatCost(seg.cost)}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* 机票查询链接 */}
+                  {flightSegments.length > 0 && (
+                    <div style={{ 
+                      padding: '8px 12px', 
+                      background: '#e6f7ff', 
+                      borderRadius: 6,
+                      border: '1px solid #91d5ff'
+                    }}>
+                      <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 6 }}>
+                        ✈️ 查询实时机票价格
+                      </div>
+                      {flightSegments.map((seg, index) => {
+                        const links = generateAllFlightLinks(seg.from, seg.to);
+                        return (
+                          <div key={index} style={{ marginBottom: index < flightSegments.length - 1 ? 6 : 0 }}>
+                            <div style={{ fontSize: 12, color: '#666', marginBottom: 4 }}>
+                              {seg.from} → {seg.to}
+                            </div>
+                            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                              {Object.entries(links).map(([key, link]) => (
+                                <a
+                                  key={key}
+                                  href={link.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    padding: '2px 8px',
+                                    background: '#1890ff',
+                                    color: 'white',
+                                    borderRadius: 4,
+                                    fontSize: 11,
+                                    textDecoration: 'none',
+                                    display: 'inline-block'
+                                  }}
+                                >
+                                  {link.name}
+                                </a>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
-              ) : null;
+              );
             })()}
             
             {editingRoute && (
