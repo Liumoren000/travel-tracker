@@ -10,6 +10,7 @@ import Statistics from './components/Statistics';
 import CityInfoModal from './components/CityInfoModal';
 import { useStatistics } from './hooks/useStatistics';
 import { downloadGPX, importGPXFile } from './utils/gpx';
+import { estimateRouteCost, formatCost } from './utils/cost';
 import { CITIES_DATABASE } from './data/citiesDatabase';
 import './App.css';
 
@@ -1034,6 +1035,33 @@ function App() {
                 </Tag>
               )}
             </div>
+            
+            {/* 费用估算 */}
+            {displayRoute.cities && displayRoute.cities.length >= 2 && (() => {
+              const costEstimate = estimateRouteCost(displayRoute.cities);
+              return costEstimate.total > 0 ? (
+                <div style={{ 
+                  marginBottom: 12, 
+                  padding: '8px 12px', 
+                  background: '#fff7e6', 
+                  borderRadius: 6,
+                  border: '1px solid #ffd591'
+                }}>
+                  <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 4 }}>
+                    💰 预估费用: <span style={{ color: '#fa8c16', fontSize: 16 }}>{formatCost(costEstimate.total)}</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#999' }}>
+                    {costEstimate.segments.map((seg, i) => (
+                      <span key={i}>
+                        {i > 0 && ' + '}
+                        {seg.mode === 'flight' ? '✈️' : seg.mode === 'train' ? '🚂' : seg.mode === 'walking' ? '🚶' : '🚗'}
+                        {formatCost(seg.cost)}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              ) : null;
+            })()}
             
             {editingRoute && (
               <div style={{ marginBottom: 12, padding: '8px 0', borderBottom: '1px solid #f0f0f0' }}>
