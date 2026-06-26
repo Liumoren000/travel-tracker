@@ -214,6 +214,15 @@ const Map = forwardRef(({
             route.segments.forEach((segment, segIndex) => {
               const isFlight = segment.mode === 'flight';
               const isTrain = segment.mode === 'train';
+              
+              // 创建透明的宽线作为点击区域
+              const hitArea = L.polyline(segment.coordinates, {
+                color: 'transparent',
+                weight: 20,
+                opacity: 0
+              }).addTo(mapInstanceRef.current);
+              
+              // 创建可见的轨迹线
               const segPolyline = L.polyline(segment.coordinates, {
                 color: color,
                 weight: isSelected ? 6 : 4,
@@ -262,20 +271,43 @@ const Map = forwardRef(({
                 `;
               }
               
-              segPolyline.bindPopup(`
+              const popupContent = `
                 <div style="min-width:180px">
                   <div style="font-weight:bold;font-size:14px;color:${color}">${segment.from} → ${segment.to}</div>
                   <div style="font-size:12px;color:#999;margin-top:2px">${modeLabel}</div>
                   <div style="font-size:12px;color:#666;margin-top:4px">距离: ${segDistance}</div>
                   ${flightLinksHTML}
                 </div>
-              `);
+              `;
+              
+              // 绑定弹窗到两条线
+              hitArea.bindPopup(popupContent);
+              segPolyline.bindPopup(popupContent);
+              
+              // 悬停效果
+              hitArea.on('mouseover', function() {
+                segPolyline.setStyle({ weight: (isSelected ? 8 : 6), opacity: 1 });
+              });
+              hitArea.on('mouseout', function() {
+                segPolyline.setStyle({ weight: (isSelected ? 6 : 4), opacity: isOtherSelected ? 0.3 : 0.8 });
+              });
+              
+              layersRef.current.push(hitArea);
               layersRef.current.push(segPolyline);
             });
             allBounds.push(...route.coordinates);
           } else {
             const isFlight = route.mode === 'flight';
             const isTrain = route.mode === 'train';
+            
+            // 创建透明的宽线作为点击区域
+            const hitArea = L.polyline(route.coordinates, {
+              color: 'transparent',
+              weight: 20,
+              opacity: 0
+            }).addTo(mapInstanceRef.current);
+            
+            // 创建可见的轨迹线
             const polyline = L.polyline(route.coordinates, {
               color: color,
               weight: isSelected ? 6 : 4,
@@ -323,7 +355,7 @@ const Map = forwardRef(({
               `;
             }
             
-            polyline.bindPopup(`
+            const popupContent = `
               <div style="min-width:180px">
                 <div style="font-weight:bold;font-size:14px;color:${color}">${routeName}</div>
                 <div style="font-size:12px;color:#999;margin-top:2px">${modeLabel}</div>
@@ -333,7 +365,21 @@ const Map = forwardRef(({
                 </div>
                 ${flightLinksHTML}
               </div>
-            `);
+            `;
+            
+            // 绑定弹窗到两条线
+            hitArea.bindPopup(popupContent);
+            polyline.bindPopup(popupContent);
+            
+            // 悬停效果
+            hitArea.on('mouseover', function() {
+              polyline.setStyle({ weight: (isSelected ? 8 : 6), opacity: 1 });
+            });
+            hitArea.on('mouseout', function() {
+              polyline.setStyle({ weight: (isSelected ? 6 : 4), opacity: isOtherSelected ? 0.3 : 0.8 });
+            });
+            
+            layersRef.current.push(hitArea);
             layersRef.current.push(polyline);
             allBounds.push(...route.coordinates);
           }
