@@ -42,6 +42,7 @@
 - 📥 **GPX 导入**：导入 GPX 文件，自动添加到地图
 - ✏️ **线路编辑**：支持编辑城市名称、删除、移动城市顺序
 - 🚂 **交通方式编辑**：编辑线路时可修改每个城市的交通方式
+- 🎨 **200+ 线路颜色**：支持 200 种可区分颜色，避免线路重色
 
 ### 界面特性
 - 📱 **响应式设计**：支持桌面和移动端，适配手机和平板
@@ -88,6 +89,7 @@
 - 📥 **GPX Import**: Import GPX files to map
 - ✏️ **Route Editing**: Edit city names, delete, reorder
 - 🚂 **Transport Mode**: Edit transport mode per city
+- 🎨 **200+ Route Colors**: 200 distinguishable colors to avoid duplicates
 
 ### Interface
 - 📱 **Responsive Design**: Desktop and mobile support
@@ -266,6 +268,10 @@ docker-compose up -d
 ```
 
 ## 更新日志 / Changelog
+
+### v1.10.0 (2026-06-25)
+- ✨ 线路颜色扩展到 200+ 种，避免线路重色
+- ✨ 颜色按色系分类（红、橙、黄、绿、青、蓝、紫、粉、棕、灰）
 
 ### v1.9.0 (2026-06-25)
 - ✨ 添加旅行统计图表（饼图/柱状图）
