@@ -16,26 +16,30 @@ export function generateGPX(routes) {
   routes.forEach((route, routeIndex) => {
     const routeName = route.name || `路线 ${routeIndex + 1}`;
     
-    // 添加航点
+    // 添加航点（包含交通方式信息）
     if (route.cities && route.cities.length > 0) {
       route.cities.forEach((city, cityIndex) => {
+        const mode = city.mode || 'driving';
         gpx += `  <wpt lat="${city.lat}" lon="${city.lng}">
     <name>${escapeXml(city.name)}</name>
-    <desc>路线: ${escapeXml(routeName)} - 第 ${cityIndex + 1} 站</desc>
+    <desc>路线: ${escapeXml(routeName)} - 第 ${cityIndex + 1} 站 - 交通方式: ${mode}</desc>
+    <sym>${mode}</sym>
   </wpt>
 `;
       });
     }
 
-    // 添加路线
+    // 添加路线（包含交通方式信息）
     gpx += `  <rte>
     <name>${escapeXml(routeName)}</name>
 `;
     
     if (route.cities && route.cities.length > 0) {
       route.cities.forEach(city => {
+        const mode = city.mode || 'driving';
         gpx += `    <rtept lat="${city.lat}" lon="${city.lng}">
       <name>${escapeXml(city.name)}</name>
+      <desc>交通方式: ${mode}</desc>
     </rtept>
 `;
       });
@@ -82,7 +86,8 @@ export function parseGPX(gpxContent) {
   const waypointsArray = Array.from(waypoints).map(wpt => ({
     name: wpt.querySelector('name')?.textContent || '未知',
     lat: parseFloat(wpt.getAttribute('lat')),
-    lng: parseFloat(wpt.getAttribute('lon'))
+    lng: parseFloat(wpt.getAttribute('lon')),
+    mode: extractMode(wpt)
   }));
 
   // 解析路线
@@ -93,7 +98,8 @@ export function parseGPX(gpxContent) {
     const cities = Array.from(rtepts).map(rtept => ({
       name: rtept.querySelector('name')?.textContent || '未知',
       lat: parseFloat(rtept.getAttribute('lat')),
-      lng: parseFloat(rtept.getAttribute('lon'))
+      lng: parseFloat(rtept.getAttribute('lon')),
+      mode: extractMode(rtept)
     }));
 
     if (cities.length >= 2) {
@@ -129,6 +135,24 @@ export function parseGPX(gpxContent) {
   });
 
   return routes;
+}
+
+// 从 XML 元素中提取交通方式
+function extractMode(element) {
+  // 从 desc 标签中提取交通方式
+  const desc = element.querySelector('desc')?.textContent || '';
+  const modeMatch = desc.match(/交通方式:\s*(\w+)/);
+  if (modeMatch) {
+    return modeMatch[1];
+  }
+  
+  // 从 sym 标签中提取交通方式
+  const sym = element.querySelector('sym')?.textContent || '';
+  if (['driving', 'train', 'flight', 'walking'].includes(sym)) {
+    return sym;
+  }
+  
+  return 'driving'; // 默认驾车
 }
 
 // 导出 GPX 文件
