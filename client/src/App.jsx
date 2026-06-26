@@ -829,7 +829,7 @@ function App() {
               onClick={toggleAddMode}
               block
             >
-              {addMode ? '退出地图点击添加' : '开启地图点击添加'}
+              {addMode ? t('exitMapClick') : t('mapClickAdd')}
             </Button>
           </div>
 
@@ -848,16 +848,16 @@ function App() {
           {routes.length > 0 && (
             <div className="map-routes">
               <div className="map-routes-header">
-                <h3>地图线路 ({routes.length})</h3>
+                <h3>{t('mapRoutes')} ({routes.length})</h3>
                 <Space size="small">
                   <Button size="small" icon={<UploadOutlined />} onClick={() => fileInputRef.current?.click()}>
-                    导入
+                    {t('import')}
                   </Button>
                   <Button size="small" icon={<DownloadOutlined />} onClick={handleExportGPX}>
-                    导出
+                    {t('export')}
                   </Button>
-                  <Popconfirm title="确定清除所有线路？" onConfirm={handleClearRoutes}>
-                    <Button size="small" icon={<ClearOutlined />}>清除</Button>
+                  <Popconfirm title={t('confirmRemoveAll')} onConfirm={handleClearRoutes}>
+                    <Button size="small" icon={<ClearOutlined />}>{t('clear')}</Button>
                   </Popconfirm>
                 </Space>
               </div>
@@ -931,6 +931,7 @@ function App() {
             setSelectedCityInfo(city);
             setCityInfoVisible(true);
           }}
+          isDark={isDark}
         />
       </Content>
 

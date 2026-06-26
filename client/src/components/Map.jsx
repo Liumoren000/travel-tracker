@@ -42,7 +42,8 @@ const Map = forwardRef(({
   onDeleteCity,
   siderCollapsed = false,
   onToggleSider,
-  onCityClick
+  onCityClick,
+  isDark = false
 }, ref) => {
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
@@ -50,7 +51,16 @@ const Map = forwardRef(({
   const clickHandlerRef = useRef(null);
   const tileLayerRef = useRef(null);
   const [exporting, setExporting] = useState(false);
-  const [mapStyle, setMapStyle] = useState('standard');
+  const [mapStyle, setMapStyle] = useState(isDark ? 'dark' : 'standard');
+
+  // 监听深色模式变化，自动切换地图样式
+  useEffect(() => {
+    if (isDark && mapStyle !== 'dark') {
+      changeMapStyle('dark');
+    } else if (!isDark && mapStyle === 'dark') {
+      changeMapStyle('standard');
+    }
+  }, [isDark]);
 
   // 切换地图样式
   const changeMapStyle = (styleKey) => {
