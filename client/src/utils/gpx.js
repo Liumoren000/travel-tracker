@@ -133,16 +133,29 @@ export function parseGPX(gpxContent) {
 
 // 导出 GPX 文件
 export function downloadGPX(routes) {
-  const gpxContent = generateGPX(routes);
-  const blob = new Blob([gpxContent], { type: 'application/gpx+xml' });
-  const url = URL.createObjectURL(blob);
-  const link = document.createElement('a');
-  link.href = url;
-  link.download = `travel-route-${new Date().toISOString().slice(0, 10)}.gpx`;
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  try {
+    const gpxContent = generateGPX(routes);
+    const blob = new Blob([gpxContent], { type: 'application/gpx+xml' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `travel-route-${new Date().toISOString().slice(0, 10)}.gpx`;
+    link.style.display = 'none';
+    document.body.appendChild(link);
+    
+    // 使用 setTimeout 确保 DOM 更新后再点击
+    setTimeout(() => {
+      link.click();
+      // 延迟清理，避免过早移除
+      setTimeout(() => {
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+      }, 100);
+    }, 0);
+  } catch (error) {
+    console.error('GPX export error:', error);
+    throw error;
+  }
 }
 
 // 导入 GPX 文件
