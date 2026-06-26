@@ -1,8 +1,7 @@
 import { useState, useRef, useCallback } from 'react';
 import { Tag, Spin } from 'antd';
-import { GlobalOutlined, EnvironmentOutlined, DownOutlined, UpOutlined, AimOutlined, HolderOutlined, MoneyCollectOutlined } from '@ant-design/icons';
+import { GlobalOutlined, EnvironmentOutlined, DownOutlined, UpOutlined, AimOutlined, HolderOutlined } from '@ant-design/icons';
 import { calculateTotalDistance, formatDistance } from '../utils/distance';
-import { estimateTotalCost, formatCost } from '../utils/cost';
 
 const COUNTRY_FLAGS = {
   'CN': '🇨🇳', 'JP': '🇯🇵', 'KR': '🇰🇷', 'TH': '🇹🇭', 'SG': '🇸🇬',
@@ -31,10 +30,6 @@ export default function Statistics({ stats, loading, routes }) {
   // 计算总距离
   const totalDistance = routes ? calculateTotalDistance(routes) : 0;
   const formattedDistance = formatDistance(totalDistance);
-  
-  // 计算总费用
-  const totalCost = routes ? estimateTotalCost(routes) : 0;
-  const formattedCost = formatCost(totalCost);
 
   // 拖动开始
   const handleMouseDown = useCallback((e) => {
@@ -124,14 +119,6 @@ export default function Statistics({ stats, loading, routes }) {
                 <span className="statistics-divider">/</span>
                 <span className="statistics-item-sm">
                   <AimOutlined /> {formattedDistance}
-                </span>
-              </>
-            )}
-            {totalCost > 0 && (
-              <>
-                <span className="statistics-divider">/</span>
-                <span className="statistics-item-sm">
-                  <MoneyCollectOutlined /> {formattedCost}
                 </span>
               </>
             )}
