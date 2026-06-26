@@ -786,6 +786,16 @@ function App() {
   // 检测是否为移动端
   const isMobile = window.innerWidth <= 768;
 
+  // 翻译交通方式标签
+  const getModeLabel = (mode) => {
+    switch(mode) {
+      case 'flight': return `✈️ ${t('flight')}`;
+      case 'train': return `🚂 ${t('train')}`;
+      case 'walking': return `🚶 ${t('walking')}`;
+      default: return `🚗 ${t('driving')}`;
+    }
+  };
+
   return (
     <Layout className="app-layout">
       <Sider 
@@ -881,7 +891,7 @@ function App() {
                         icon={<EyeOutlined />}
                         size="small"
                         onClick={(e) => handleViewRouteDetail(route, e)}
-                        title="查看详情"
+                        title={t('viewDetail')}
                       />,
                       <Button
                         type="text"
@@ -889,7 +899,7 @@ function App() {
                         icon={<DeleteOutlined />}
                         size="small"
                         onClick={(e) => { e.stopPropagation(); handleRemoveRoute(index); }}
-                        title="删除"
+                        title={t('delete')}
                       />
                     ]}
                   >
@@ -945,34 +955,34 @@ function App() {
       />
 
       <Modal
-        title="保存路线"
+        title={t('saveRouteTitle')}
         open={saveModalVisible}
         onOk={handleConfirmSave}
         onCancel={() => setSaveModalVisible(false)}
-        okText="保存"
-        cancelText="取消"
+        okText={t('save')}
+        cancelText={t('cancel')}
       >
         <Input
-          placeholder="请输入路线名称"
+          placeholder={t('inputRouteName')}
           value={routeName}
           onChange={e => setRouteName(e.target.value)}
         />
       </Modal>
 
       <Modal
-        title="添加城市"
+        title={t('addCityTitle')}
         open={mapClickModalVisible}
         onOk={handleConfirmMapClick}
         onCancel={handleCancelMapClick}
-        okText="添加"
-        cancelText="取消"
+        okText={t('add')}
+        cancelText={t('cancel')}
       >
         <div style={{ marginBottom: 12 }}>
           <div style={{ color: '#666', marginBottom: 8 }}>
-            位置: {pendingLatLng?.lat.toFixed(4)}, {pendingLatLng?.lng.toFixed(4)}
+            {t('position')} {pendingLatLng?.lat.toFixed(4)}, {pendingLatLng?.lng.toFixed(4)}
           </div>
           <Input
-            placeholder="请输入城市名称"
+            placeholder={t('inputCityName')}
             value={mapClickCityName}
             onChange={e => setMapClickCityName(e.target.value)}
             onPressEnter={handleConfirmMapClick}
@@ -980,16 +990,16 @@ function App() {
           />
           {cities.length > 0 && (
             <div style={{ marginTop: 12 }}>
-              <div style={{ fontSize: 12, color: '#666', marginBottom: 8 }}>交通方式：</div>
+              <div style={{ fontSize: 12, color: '#666', marginBottom: 8 }}>{t('transportMode')}</div>
               <Radio.Group 
                 value={mapClickTransportMode} 
                 onChange={e => setMapClickTransportMode(e.target.value)}
                 style={{ display: 'flex', flexDirection: 'column', gap: 8 }}
               >
-                <Radio value="driving"><CarOutlined /> 驾车</Radio>
-                <Radio value="train"><SendOutlined /> 火车</Radio>
-                <Radio value="flight"><GlobalOutlined /> 飞机</Radio>
-                <Radio value="walking">🚶 步行</Radio>
+                <Radio value="driving"><CarOutlined /> {t('driving')}</Radio>
+                <Radio value="train"><SendOutlined /> {t('train')}</Radio>
+                <Radio value="flight"><GlobalOutlined /> {t('flight')}</Radio>
+                <Radio value="walking">🚶 {t('walking')}</Radio>
               </Radio.Group>
             </div>
           )}
@@ -997,19 +1007,19 @@ function App() {
       </Modal>
 
       <Modal
-        title="添加城市到编辑线路"
+        title={t('addCityToEdit')}
         open={editAddCityVisible}
         onOk={handleConfirmEditAddCity}
         onCancel={() => { setEditAddCityVisible(false); setEditAddCityName(''); setEditAddCityLatLng(null); }}
-        okText="添加"
-        cancelText="取消"
+        okText={t('add')}
+        cancelText={t('cancel')}
       >
         <div style={{ marginBottom: 12 }}>
           <div style={{ color: '#666', marginBottom: 8 }}>
-            位置: {editAddCityLatLng?.lat.toFixed(4)}, {editAddCityLatLng?.lng.toFixed(4)}
+            {t('position')} {editAddCityLatLng?.lat.toFixed(4)}, {editAddCityLatLng?.lng.toFixed(4)}
           </div>
           <Input
-            placeholder="请输入城市名称"
+            placeholder={t('inputCityName')}
             value={editAddCityName}
             onChange={e => setEditAddCityName(e.target.value)}
             onPressEnter={handleConfirmEditAddCity}
@@ -1021,19 +1031,19 @@ function App() {
       <Modal
         title={
           <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-            <span>{editingRoute ? '编辑线路' : '线路详情'}</span>
-            {editingRoute && <Tag color="editing">编辑中</Tag>}
+            <span>{editingRoute ? t('editRoute') : t('routeDetail')}</span>
+            {editingRoute && <Tag color="editing">{t('editRouteTag')}</Tag>}
           </div>
         }
         open={routeDetailVisible}
         onCancel={() => { setRouteDetailVisible(false); setEditingRoute(null); setEditingRouteIndex(null); }}
         footer={
           editingRoute ? [
-            <Button key="cancel" onClick={handleCancelEdit}>取消</Button>,
-            <Button key="save" type="primary" icon={<SaveOutlined />} onClick={handleSaveEdit}>保存修改</Button>
+            <Button key="cancel" onClick={handleCancelEdit}>{t('cancel')}</Button>,
+            <Button key="save" type="primary" icon={<SaveOutlined />} onClick={handleSaveEdit}>{t('saveEdit')}</Button>
           ] : [
-            <Button key="edit" type="primary" icon={<EditOutlined />} onClick={handleStartEdit}>编辑线路</Button>,
-            <Button key="close" onClick={() => setRouteDetailVisible(false)}>关闭</Button>
+            <Button key="edit" type="primary" icon={<EditOutlined />} onClick={handleStartEdit}>{t('editRoute')}</Button>,
+            <Button key="close" onClick={() => setRouteDetailVisible(false)}>{t('close')}</Button>
           ]
         }
         width={450}
@@ -1050,10 +1060,10 @@ function App() {
               ) : (
                 <Tag color={displayRoute.color}>{displayRoute.name}</Tag>
               )}
-              <span>{displayRoute.cities.length} 个城市</span>
+              <span>{displayRoute.cities.length} {t('citiesLabel')}</span>
               {displayRoute.mode && (
                 <Tag color={displayRoute.mode === 'flight' ? 'orange' : 'blue'}>
-                  {displayRoute.mode === 'flight' ? '✈️ 飞行' : displayRoute.mode === 'walking' ? '🚶 步行' : '🚗 驾车'}
+                  {getModeLabel(displayRoute.mode)}
                 </Tag>
               )}
             </div>
@@ -1083,7 +1093,7 @@ function App() {
                   border: '1px solid #91d5ff'
                 }}>
                   <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 6 }}>
-                    ✈️ 查询实时机票价格
+                    ✈️ {t('queryFlightPrice')}
                   </div>
                   {flightSegments.map((seg, index) => {
                     const links = generateAllFlightLinks(seg.from, seg.to);
@@ -1124,7 +1134,7 @@ function App() {
               <div style={{ marginBottom: 12, padding: '8px 0', borderBottom: '1px solid #f0f0f0' }}>
                 <div style={{ marginBottom: 8, position: 'relative' }}>
                   <Input
-                    placeholder="输入城市名称搜索..."
+                    placeholder={t('searchAddCity')}
                     prefix={<SearchOutlined />}
                     value={editSearchText}
                     onChange={(e) => {
@@ -1203,20 +1213,20 @@ function App() {
                   )}
                 </div>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                  <span style={{ fontSize: 12, color: '#666', whiteSpace: 'nowrap' }}>交通方式：</span>
+                  <span style={{ fontSize: 12, color: '#666', whiteSpace: 'nowrap' }}>{t('transportMode')}</span>
                   <Radio.Group 
                     value={editingRoute.mode || 'driving'} 
                     onChange={e => setEditingRoute(prev => ({ ...prev, mode: e.target.value }))}
                     size="small"
                   >
-                    <Radio.Button value="driving"><CarOutlined /> 驾车</Radio.Button>
-                    <Radio.Button value="train"><SendOutlined /> 火车</Radio.Button>
-                    <Radio.Button value="flight"><GlobalOutlined /> 飞机</Radio.Button>
-                    <Radio.Button value="walking">🚶 步行</Radio.Button>
+                    <Radio.Button value="driving"><CarOutlined /> {t('driving')}</Radio.Button>
+                    <Radio.Button value="train"><SendOutlined /> {t('train')}</Radio.Button>
+                    <Radio.Button value="flight"><GlobalOutlined /> {t('flight')}</Radio.Button>
+                    <Radio.Button value="walking">🚶 {t('walking')}</Radio.Button>
                   </Radio.Group>
                 </div>
                 <div style={{ fontSize: 12, color: '#666' }}>
-                  提示：搜索添加城市，或开启"地图点击添加"后在地图上点击添加
+                  {t('editTip')}
                 </div>
               </div>
             )}
@@ -1227,8 +1237,8 @@ function App() {
                   <div className="city-dot" style={{ background: editingRoute ? '#1890ff' : displayRoute.color }} />
                   <div className="city-info" style={{ flex: 1 }}>
                     <div className="city-name" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                      {index === 0 && <Tag color="green">起点</Tag>}
-                      {index === displayRoute.cities.length - 1 && index !== 0 && <Tag color="red">终点</Tag>}
+                      {index === 0 && <Tag color="green">{t('startPoint')}</Tag>}
+                      {index === displayRoute.cities.length - 1 && index !== 0 && <Tag color="red">{t('endPoint')}</Tag>}
                       {editingRoute ? (
                         <Input 
                           size="small" 
@@ -1250,20 +1260,18 @@ function App() {
                           onChange={(value) => handleEditCityMode(index, value)}
                           size="small"
                           style={{ width: 100 }}
-                          options={[
-                            { value: 'driving', label: '🚗 驾车' },
-                            { value: 'train', label: '🚂 火车' },
-                            { value: 'flight', label: '✈️ 飞机' },
-                            { value: 'walking', label: '🚶 步行' }
+                            options={[
+                            { value: 'driving', label: t('drivingLabel') },
+                            { value: 'train', label: t('trainLabel') },
+                            { value: 'flight', label: t('flightLabel') },
+                            { value: 'walking', label: t('walkingLabel') }
                           ]}
                         />
                       </div>
                     )}
                     {!editingRoute && city.mode && index > 0 && (
                       <div style={{ marginTop: 2, fontSize: 11, color: '#999' }}>
-                        {city.mode === 'driving' ? '🚗 驾车' : 
-                         city.mode === 'train' ? '🚂 火车' :
-                         city.mode === 'flight' ? '✈️ 飞机' : '🚶 步行'}
+                        {getModeLabel(city.mode)}
                       </div>
                     )}
                   </div>
@@ -1275,7 +1283,7 @@ function App() {
                         icon={<ArrowUpOutlined />}
                         onClick={() => handleEditMoveCity(index, 'up')}
                         disabled={index === 0}
-                        title="上移"
+                        title={t('moveUp')}
                       />
                       <Button
                         type="text"
@@ -1283,7 +1291,7 @@ function App() {
                         icon={<ArrowDownOutlined />}
                         onClick={() => handleEditMoveCity(index, 'down')}
                         disabled={index === displayRoute.cities.length - 1}
-                        title="下移"
+                        title={t('moveDown')}
                       />
                       <Button
                         type="text"
@@ -1291,7 +1299,7 @@ function App() {
                         size="small"
                         icon={<DeleteOutlined />}
                         onClick={() => handleEditDeleteCity(index)}
-                        title="删除"
+                        title={t('delete')}
                       />
                     </div>
                   )}
