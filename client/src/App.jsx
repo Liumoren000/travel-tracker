@@ -904,75 +904,81 @@ function App() {
             onCityModeChange={handleCityModeChange}
           />
 
-          {routes.length > 0 && (
-            <div className="map-routes">
-              <div className="map-routes-header">
-                <h3>{t('mapRoutes')} ({routes.length})</h3>
-                <Space size="small">
+          <div className="map-routes">
+            <div className="map-routes-header">
+              <h3>{t('mapRoutes')} ({routes.length})</h3>
+              <Space size="small">
+                {routes.length > 0 && (
                   <Button size="small" icon={<BarChartOutlined />} onClick={() => setTravelStatsVisible(true)}>
                     {language === 'zh' ? '统计' : 'Stats'}
                   </Button>
-                  <Button size="small" icon={<UploadOutlined />} onClick={() => fileInputRef.current?.click()}>
-                    {t('import')}
-                  </Button>
-                  <Button size="small" icon={<DownloadOutlined />} onClick={handleExportGPX}>
-                    {t('export')}
-                  </Button>
-                  <Popconfirm title={t('confirmRemoveAll')} onConfirm={handleClearRoutes}>
-                    <Button size="small" icon={<ClearOutlined />}>{t('clear')}</Button>
-                  </Popconfirm>
-                </Space>
-              </div>
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".gpx"
-                style={{ display: 'none' }}
-                onChange={handleImportGPX}
-              />
-              <List
-                size="small"
-                dataSource={routes}
-                renderItem={(route, index) => (
-                  <List.Item
-                    className={`route-list-item ${selectedRouteIndex === index ? 'route-selected' : ''}`}
-                    onClick={() => handleSelectRoute(index)}
-                    actions={[
-                      <Button
-                        type="text"
-                        icon={<EyeOutlined />}
-                        size="small"
-                        onClick={(e) => handleViewRouteDetail(route, e)}
-                        title={t('viewDetail')}
-                      />,
-                      <Button
-                        type="text"
-                        danger
-                        icon={<DeleteOutlined />}
-                        size="small"
-                        onClick={(e) => { e.stopPropagation(); handleRemoveRoute(index); }}
-                        title={t('delete')}
-                      />
-                    ]}
-                  >
-                    <List.Item.Meta
-                      avatar={<div className="route-color-dot" style={{ background: route.color }} />}
-                      title={route.name}
-                      description={
-                        <div className="route-cities-preview">
-                          {route.cities.map((city, i) => (
-                            <Tag key={i} color={i === 0 ? 'green' : i === route.cities.length - 1 ? 'red' : 'default'}>
-                              {city.name}
-                            </Tag>
-                          ))}
-                        </div>
-                      }
-                    />
-                  </List.Item>
                 )}
-              />
+                <Button size="small" icon={<UploadOutlined />} onClick={() => fileInputRef.current?.click()}>
+                  {t('import')}
+                </Button>
+                {routes.length > 0 && (
+                  <>
+                    <Button size="small" icon={<DownloadOutlined />} onClick={handleExportGPX}>
+                      {t('export')}
+                    </Button>
+                    <Popconfirm title={t('confirmRemoveAll')} onConfirm={handleClearRoutes}>
+                      <Button size="small" icon={<ClearOutlined />}>{t('clear')}</Button>
+                    </Popconfirm>
+                  </>
+                )}
+              </Space>
             </div>
-          )}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".gpx"
+              style={{ display: 'none' }}
+              onChange={handleImportGPX}
+              />
+              {routes.length > 0 && (
+                <List
+                  size="small"
+                  dataSource={routes}
+                  renderItem={(route, index) => (
+                    <List.Item
+                      className={`route-list-item ${selectedRouteIndex === index ? 'route-selected' : ''}`}
+                      onClick={() => handleSelectRoute(index)}
+                      actions={[
+                        <Button
+                          type="text"
+                          icon={<EyeOutlined />}
+                          size="small"
+                          onClick={(e) => handleViewRouteDetail(route, e)}
+                          title={t('viewDetail')}
+                        />,
+                        <Button
+                          type="text"
+                          danger
+                          icon={<DeleteOutlined />}
+                          size="small"
+                          onClick={(e) => { e.stopPropagation(); handleRemoveRoute(index); }}
+                          title={t('delete')}
+                        />
+                      ]}
+                    >
+                      <List.Item.Meta
+                        avatar={<div className="route-color-dot" style={{ background: route.color }} />}
+                        title={route.name}
+                        description={
+                          <div className="route-cities-preview">
+                            {route.cities.map((city, i) => (
+                              <Tag key={i} color={i === 0 ? 'green' : i === route.cities.length - 1 ? 'red' : 'default'}>
+                                {city.name}
+                              </Tag>
+                            ))}
+                          </div>
+                        }
+                      />
+                    </List.Item>
+                  )}
+                />
+              )}
+            </div>
 
           <History onLoadRoute={handleLoadRoute} />
         </div>
