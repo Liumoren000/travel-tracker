@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
-import { Modal, Button, Tabs } from 'antd';
-import { BarChartOutlined, PieChartOutlined } from '@ant-design/icons';
+import { Modal, Tabs } from 'antd';
+import { BarChartOutlined } from '@ant-design/icons';
 import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
@@ -13,13 +13,34 @@ const COLORS = [
   '#ff7a45', '#36cfc9', '#ffc53d', '#40a9ff', '#9254de'
 ];
 
+// 自定义 Tooltip
+const CustomTooltip = ({ active, payload, label, isDark }) => {
+  if (active && payload && payload.length) {
+    return (
+      <div style={{
+        background: isDark ? '#333' : '#fff',
+        border: `1px solid ${isDark ? '#555' : '#ccc'}`,
+        borderRadius: 4,
+        padding: '8px 12px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.2)'
+      }}>
+        <p style={{ margin: 0, color: isDark ? '#fff' : '#333', fontWeight: 500 }}>
+          {label || payload[0].name}
+        </p>
+        {payload.map((entry, index) => (
+          <p key={index} style={{ margin: '4px 0 0', color: isDark ? '#ccc' : '#666', fontSize: 13 }}>
+            {entry.name}: {entry.value}
+          </p>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
+
 const TravelStatsModal = ({ visible, onClose, routes, countryStats }) => {
-  const { language, t } = useLanguage();
+  const { language } = useLanguage();
   const { isDark } = useTheme();
-  
-  const textColor = isDark ? '#ffffff' : '#333333';
-  const bgColor = isDark ? '#1f1f1f' : '#ffffff';
-  const gridColor = isDark ? '#4d4d4d' : '#e8e8e8';
 
   // 计算国家城市分布
   const countryCityData = useMemo(() => {
@@ -45,13 +66,18 @@ const TravelStatsModal = ({ visible, onClose, routes, countryStats }) => {
       }
     });
 
+    const labels = {
+      zh: { driving: '🚗 驾车', train: '🚂 火车', flight: '✈️ 飞机', walking: '🚶 步行' },
+      en: { driving: '🚗 Driving', train: '🚂 Train', flight: '✈️ Flight', walking: '🚶 Walking' }
+    };
+
     return [
-      { name: `🚗 ${t('driving')}`, value: counts.driving },
-      { name: `🚂 ${t('train')}`, value: counts.train },
-      { name: `✈️ ${t('flight')}`, value: counts.flight },
-      { name: `🚶 ${t('walking')}`, value: counts.walking }
+      { name: labels[language].driving, value: counts.driving },
+      { name: labels[language].train, value: counts.train },
+      { name: labels[language].flight, value: counts.flight },
+      { name: labels[language].walking, value: counts.walking }
     ].filter(item => item.value > 0);
-  }, [routes, t]);
+  }, [routes, language]);
 
   // 计算路线距离分布
   const routeDistanceData = useMemo(() => {
@@ -87,6 +113,7 @@ const TravelStatsModal = ({ visible, onClose, routes, countryStats }) => {
     })).sort((a, b) => b.cities - a.cities).slice(0, 10);
   }, [countryStats]);
 
+  // 自定义饼图标签
   const renderCustomizedLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
     if (percent < 0.05) return null;
     const RADIAN = Math.PI / 180;
@@ -99,6 +126,14 @@ const TravelStatsModal = ({ visible, onClose, routes, countryStats }) => {
         {`${(percent * 100).toFixed(0)}%`}
       </text>
     );
+  };
+
+  // 图表容器样式
+  const chartContainerStyle = {
+    background: isDark ? '#1f1f1f' : '#fff',
+    borderRadius: 8,
+    padding: '16px',
+    marginBottom: '8px'
   };
 
   return (
@@ -114,6 +149,7 @@ const TravelStatsModal = ({ visible, onClose, routes, countryStats }) => {
       footer={null}
       width={700}
       destroyOnClose
+      styles={{ body: { background: isDark ? '#1f1f1f' : '#fff' } }}
     >
       <Tabs
         defaultActiveKey="country"
@@ -122,9 +158,9 @@ const TravelStatsModal = ({ visible, onClose, routes, countryStats }) => {
             key: 'country',
             label: language === 'zh' ? '国家分布' : 'Countries',
             children: (
-              <div style={{ height: 350 }}>
+              <div style={chartContainerStyle}>
                 {countryCityData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height={320}>
                     <PieChart>
                       <Pie
                         data={countryCityData}
@@ -140,16 +176,14 @@ const TravelStatsModal = ({ visible, onClose, routes, countryStats }) => {
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip 
-                        contentStyle={{ background: bgColor, border: `1px solid ${gridColor}`, color: textColor }}
-                      />
+                      <Tooltip content={<CustomTooltip isDark={isDark} />} />
                       <Legend 
-                        wrapperStyle={{ color: textColor }}
+                        formatter={(value) => <span style={{ color: isDark ? '#fff' : '#333' }}>{value}</span>}
                       />
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div style={{ textAlign: 'center', padding: 40, color: textColor }}>
+                  <div style={{ textAlign: 'center', padding: 40, color: isDark ? '#999' : '#999' }}>
                     {language === 'zh' ? '暂无数据' : 'No data'}
                   </div>
                 )}
@@ -160,9 +194,9 @@ const TravelStatsModal = ({ visible, onClose, routes, countryStats }) => {
             key: 'transport',
             label: language === 'zh' ? '交通方式' : 'Transport',
             children: (
-              <div style={{ height: 350 }}>
+              <div style={chartContainerStyle}>
                 {transportData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height={320}>
                     <PieChart>
                       <Pie
                         data={transportData}
@@ -178,16 +212,14 @@ const TravelStatsModal = ({ visible, onClose, routes, countryStats }) => {
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip 
-                        contentStyle={{ background: bgColor, border: `1px solid ${gridColor}`, color: textColor }}
-                      />
+                      <Tooltip content={<CustomTooltip isDark={isDark} />} />
                       <Legend 
-                        wrapperStyle={{ color: textColor }}
+                        formatter={(value) => <span style={{ color: isDark ? '#fff' : '#333' }}>{value}</span>}
                       />
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div style={{ textAlign: 'center', padding: 40, color: textColor }}>
+                  <div style={{ textAlign: 'center', padding: 40, color: isDark ? '#999' : '#999' }}>
                     {language === 'zh' ? '暂无数据' : 'No data'}
                   </div>
                 )}
@@ -198,22 +230,25 @@ const TravelStatsModal = ({ visible, onClose, routes, countryStats }) => {
             key: 'distance',
             label: language === 'zh' ? '路线距离' : 'Distance',
             children: (
-              <div style={{ height: 350 }}>
+              <div style={chartContainerStyle}>
                 {routeDistanceData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height={320}>
                     <BarChart data={routeDistanceData}>
-                      <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-                      <XAxis dataKey="name" angle={-30} textAnchor="end" height={80} tick={{ fill: textColor }} />
-                      <YAxis tick={{ fill: textColor }} />
-                      <Tooltip 
-                        formatter={(value) => [`${value} km`, language === 'zh' ? '距离' : 'Distance']}
-                        contentStyle={{ background: bgColor, border: `1px solid ${gridColor}`, color: textColor }}
+                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#444' : '#e8e8e8'} />
+                      <XAxis 
+                        dataKey="name" 
+                        angle={-30} 
+                        textAnchor="end" 
+                        height={80} 
+                        tick={{ fill: isDark ? '#ccc' : '#666', fontSize: 11 }} 
                       />
-                      <Bar dataKey="distance" fill="#1890ff" />
+                      <YAxis tick={{ fill: isDark ? '#ccc' : '#666' }} />
+                      <Tooltip content={<CustomTooltip isDark={isDark} />} />
+                      <Bar dataKey="distance" fill="#1890ff" radius={[4, 4, 0, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div style={{ textAlign: 'center', padding: 40, color: textColor }}>
+                  <div style={{ textAlign: 'center', padding: 40, color: isDark ? '#999' : '#999' }}>
                     {language === 'zh' ? '暂无数据' : 'No data'}
                   </div>
                 )}
@@ -224,22 +259,24 @@ const TravelStatsModal = ({ visible, onClose, routes, countryStats }) => {
             key: 'cities',
             label: language === 'zh' ? '城市统计' : 'Cities',
             children: (
-              <div style={{ height: 350 }}>
+              <div style={chartContainerStyle}>
                 {cityByCountryData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer width="100%" height={320}>
                     <BarChart data={cityByCountryData} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
-                      <XAxis type="number" tick={{ fill: textColor }} />
-                      <YAxis type="category" dataKey="name" width={80} tick={{ fill: textColor }} />
-                      <Tooltip 
-                        formatter={(value) => [value, language === 'zh' ? '城市数' : 'Cities']}
-                        contentStyle={{ background: bgColor, border: `1px solid ${gridColor}`, color: textColor }}
+                      <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#444' : '#e8e8e8'} />
+                      <XAxis type="number" tick={{ fill: isDark ? '#ccc' : '#666' }} />
+                      <YAxis 
+                        type="category" 
+                        dataKey="name" 
+                        width={80} 
+                        tick={{ fill: isDark ? '#ccc' : '#666', fontSize: 12 }} 
                       />
-                      <Bar dataKey="cities" fill="#52c41a" />
+                      <Tooltip content={<CustomTooltip isDark={isDark} />} />
+                      <Bar dataKey="cities" fill="#52c41a" radius={[0, 4, 4, 0]} />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div style={{ textAlign: 'center', padding: 40, color: textColor }}>
+                  <div style={{ textAlign: 'center', padding: 40, color: isDark ? '#999' : '#999' }}>
                     {language === 'zh' ? '暂无数据' : 'No data'}
                   </div>
                 )}
