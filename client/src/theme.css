@@ -108,13 +108,23 @@
   background: var(--bg-primary) !important;
 }
 
-[data-theme="dark"] .ant-input {
+[data-theme="dark"] .ant-input,
+[data-theme="dark"] .ant-input-affix-wrapper {
   background: var(--bg-tertiary) !important;
   border-color: var(--border-color-dark) !important;
   color: var(--text-primary) !important;
 }
 
 [data-theme="dark"] .ant-input::placeholder {
+  color: var(--text-tertiary) !important;
+}
+
+[data-theme="dark"] .ant-input-affix-wrapper .ant-input {
+  background: transparent !important;
+  border: none !important;
+}
+
+[data-theme="dark"] .ant-input-affix-wrapper .ant-input-suffix {
   color: var(--text-tertiary) !important;
 }
 
@@ -128,6 +138,22 @@
   background: var(--hover-bg) !important;
   border-color: var(--primary-color) !important;
   color: var(--primary-color) !important;
+}
+
+[data-theme="dark"] .ant-btn-primary {
+  background: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+}
+
+[data-theme="dark"] .ant-btn-primary:hover {
+  background: #40a9ff !important;
+  border-color: #40a9ff !important;
+}
+
+[data-theme="dark"] .ant-btn-ghost {
+  background: transparent !important;
+  border-color: var(--border-color-dark) !important;
+  color: var(--text-primary) !important;
 }
 
 [data-theme="dark"] .ant-tag {
@@ -173,6 +199,10 @@
 
 [data-theme="dark"] .ant-modal-footer {
   border-top-color: var(--border-color) !important;
+}
+
+[data-theme="dark"] .ant-modal-body {
+  color: var(--text-primary) !important;
 }
 
 [data-theme="dark"] .ant-list-item {
@@ -227,6 +257,38 @@
 
 [data-theme="dark"] .ant-popconfirm-description {
   color: var(--text-secondary) !important;
+}
+
+[data-theme="dark"] .ant-radio-wrapper {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .ant-tabs-tab {
+  color: var(--text-secondary) !important;
+}
+
+[data-theme="dark"] .ant-tabs-tab-active {
+  color: var(--primary-color) !important;
+}
+
+[data-theme="dark"] .ant-tabs-ink-bar {
+  background: var(--primary-color) !important;
+}
+
+[data-theme="dark"] .ant-tabs-nav {
+  color: var(--text-secondary) !important;
+}
+
+[data-theme="dark"] .ant-dropdown-menu {
+  background: var(--bg-primary) !important;
+}
+
+[data-theme="dark"] .ant-dropdown-menu-item {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .ant-dropdown-menu-item:hover {
+  background: var(--hover-bg) !important;
 }
 
 /* 统计栏深色模式 */
