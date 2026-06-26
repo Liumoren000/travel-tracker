@@ -1,36 +1,28 @@
 import { useState, useEffect } from 'react';
 import { Modal, Spin, Tag } from 'antd';
 import { EnvironmentOutlined, TeamOutlined } from '@ant-design/icons';
-import { getCityDetails } from '../data/cityDetails';
 import { getCityWikiInfo } from '../services/wikipedia';
 import { getWeather } from '../services/weather';
 
 const CityInfoModal = ({ visible, onClose, city }) => {
   const [weather, setWeather] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [cityDetails, setCityDetails] = useState(null);
   const [wikiInfo, setWikiInfo] = useState(null);
 
   useEffect(() => {
     if (visible && city) {
       setLoading(true);
-      setWeather(null);
       setWikiInfo(null);
+      setWeather(null);
 
-      // 获取本地城市详情
-      const details = getCityDetails(city.name);
-      setCityDetails(details);
-
-      // 获取 Wikipedia 信息（如果本地没有详情）
-      if (!details) {
-        getCityWikiInfo(city.name)
-          .then(data => {
-            setWikiInfo(data);
-          })
-          .catch(err => {
-            console.error('获取维基信息失败:', err);
-          });
-      }
+      // 使用 Wikipedia API 获取城市详情
+      getCityWikiInfo(city.name)
+        .then(data => {
+          setWikiInfo(data);
+        })
+        .catch(err => {
+          console.error('获取维基信息失败:', err);
+        });
 
       // 获取天气信息
       getWeather(city.lat, city.lng)
@@ -69,38 +61,9 @@ const CityInfoModal = ({ visible, onClose, city }) => {
             坐标: {city.lat.toFixed(4)}, {city.lng.toFixed(4)}
           </div>
           
-          {/* 本地详情 */}
-          {cityDetails ? (
+          {/* Wikipedia 详情 */}
+          {wikiInfo ? (
             <>
-              <div style={{ marginBottom: 12, lineHeight: 1.6 }}>
-                {cityDetails.description}
-              </div>
-              
-              {cityDetails.population && (
-                <div style={{ display: 'flex', gap: 16, marginBottom: 12 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                    <TeamOutlined style={{ color: '#1890ff' }} />
-                    <span style={{ fontSize: 13 }}>人口: {cityDetails.population}</span>
-                  </div>
-                </div>
-              )}
-
-              {cityDetails.attractions && cityDetails.attractions.length > 0 && (
-                <div style={{ marginBottom: 12 }}>
-                  <div style={{ fontSize: 13, fontWeight: 500, marginBottom: 8 }}>
-                    🏛️ 主要景点
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                    {cityDetails.attractions.map((attraction, index) => (
-                      <Tag key={index} color="blue">{attraction}</Tag>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </>
-          ) : wikiInfo ? (
-            <>
-              {/* Wikipedia 详情 */}
               {wikiInfo.image && (
                 <div style={{ marginBottom: 12, textAlign: 'center' }}>
                   <img 
@@ -108,7 +71,7 @@ const CityInfoModal = ({ visible, onClose, city }) => {
                     alt={city.name}
                     style={{ 
                       maxWidth: '100%', 
-                      maxHeight: 150, 
+                      maxHeight: 180, 
                       borderRadius: 8,
                       objectFit: 'cover'
                     }}
@@ -127,8 +90,15 @@ const CityInfoModal = ({ visible, onClose, city }) => {
               )}
             </>
           ) : (
-            <div style={{ color: '#999', fontSize: 13 }}>
-              {loading ? '加载城市信息中...' : '暂无该城市的详细信息'}
+            <div style={{ textAlign: 'center', padding: 16 }}>
+              {loading ? (
+                <>
+                  <Spin size="small" />
+                  <div style={{ marginTop: 8, color: '#999', fontSize: 12 }}>加载城市信息中...</div>
+                </>
+              ) : (
+                <div style={{ color: '#999', fontSize: 13 }}>暂无该城市的详细信息</div>
+              )}
             </div>
           )}
         </div>
