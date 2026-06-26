@@ -1,22 +1,38 @@
 import { useState, useEffect } from 'react';
 import { Modal, Spin, Tag } from 'antd';
-import { EnvironmentOutlined, TeamOutlined, EnvironmentOutlined as SpotOutlined } from '@ant-design/icons';
+import { EnvironmentOutlined, TeamOutlined } from '@ant-design/icons';
 import { getCityDetails } from '../data/cityDetails';
+import { getCityWikiInfo } from '../services/wikipedia';
 import { getWeather } from '../services/weather';
 
 const CityInfoModal = ({ visible, onClose, city }) => {
   const [weather, setWeather] = useState(null);
   const [loading, setLoading] = useState(false);
   const [cityDetails, setCityDetails] = useState(null);
+  const [wikiInfo, setWikiInfo] = useState(null);
 
   useEffect(() => {
     if (visible && city) {
-      // 获取城市详情
+      setLoading(true);
+      setWeather(null);
+      setWikiInfo(null);
+
+      // 获取本地城市详情
       const details = getCityDetails(city.name);
       setCityDetails(details);
 
+      // 获取 Wikipedia 信息（如果本地没有详情）
+      if (!details) {
+        getCityWikiInfo(city.name)
+          .then(data => {
+            setWikiInfo(data);
+          })
+          .catch(err => {
+            console.error('获取维基信息失败:', err);
+          });
+      }
+
       // 获取天气信息
-      setLoading(true);
       getWeather(city.lat, city.lng)
         .then(data => {
           setWeather(data);
@@ -53,18 +69,21 @@ const CityInfoModal = ({ visible, onClose, city }) => {
             坐标: {city.lat.toFixed(4)}, {city.lng.toFixed(4)}
           </div>
           
+          {/* 本地详情 */}
           {cityDetails ? (
             <>
               <div style={{ marginBottom: 12, lineHeight: 1.6 }}>
                 {cityDetails.description}
               </div>
               
-              <div style={{ display: 'flex', gap: 16, marginBottom: 12 }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                  <TeamOutlined style={{ color: '#1890ff' }} />
-                  <span style={{ fontSize: 13 }}>人口: {cityDetails.population}</span>
+              {cityDetails.population && (
+                <div style={{ display: 'flex', gap: 16, marginBottom: 12 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                    <TeamOutlined style={{ color: '#1890ff' }} />
+                    <span style={{ fontSize: 13 }}>人口: {cityDetails.population}</span>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {cityDetails.attractions && cityDetails.attractions.length > 0 && (
                 <div style={{ marginBottom: 12 }}>
@@ -79,9 +98,37 @@ const CityInfoModal = ({ visible, onClose, city }) => {
                 </div>
               )}
             </>
+          ) : wikiInfo ? (
+            <>
+              {/* Wikipedia 详情 */}
+              {wikiInfo.image && (
+                <div style={{ marginBottom: 12, textAlign: 'center' }}>
+                  <img 
+                    src={wikiInfo.image} 
+                    alt={city.name}
+                    style={{ 
+                      maxWidth: '100%', 
+                      maxHeight: 150, 
+                      borderRadius: 8,
+                      objectFit: 'cover'
+                    }}
+                  />
+                </div>
+              )}
+              <div style={{ marginBottom: 12, lineHeight: 1.6, fontSize: 13 }}>
+                {wikiInfo.description}
+              </div>
+              {wikiInfo.wikiUrl && (
+                <div style={{ fontSize: 12 }}>
+                  <a href={wikiInfo.wikiUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#1890ff' }}>
+                    查看维基百科了解更多 →
+                  </a>
+                </div>
+              )}
+            </>
           ) : (
             <div style={{ color: '#999', fontSize: 13 }}>
-              暂无该城市的详细信息
+              {loading ? '加载城市信息中...' : '暂无该城市的详细信息'}
             </div>
           )}
         </div>
