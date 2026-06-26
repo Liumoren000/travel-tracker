@@ -8,6 +8,7 @@ import RouteList from './components/RouteList';
 import History from './components/History';
 import Statistics from './components/Statistics';
 import CityInfoModal from './components/CityInfoModal';
+import TravelStatsModal from './components/TravelStatsModal';
 import { useStatistics } from './hooks/useStatistics';
 import { useTheme } from './hooks/useTheme.jsx';
 import { useLanguage } from './hooks/useLanguage.jsx';
@@ -116,6 +117,7 @@ function App() {
   const [siderCollapsed, setSiderCollapsed] = useState(false);
   const [cityInfoVisible, setCityInfoVisible] = useState(false);
   const [selectedCityInfo, setSelectedCityInfo] = useState(null);
+  const [travelStatsVisible, setTravelStatsVisible] = useState(false);
   const { isDark, toggleTheme } = useTheme();
   const { language, toggleLanguage, t } = useLanguage();
   const fileInputRef = useRef(null);
@@ -860,6 +862,9 @@ function App() {
               <div className="map-routes-header">
                 <h3>{t('mapRoutes')} ({routes.length})</h3>
                 <Space size="small">
+                  <Button size="small" icon={<BarChartOutlined />} onClick={() => setTravelStatsVisible(true)}>
+                    {language === 'zh' ? '统计' : 'Stats'}
+                  </Button>
                   <Button size="small" icon={<UploadOutlined />} onClick={() => fileInputRef.current?.click()}>
                     {t('import')}
                   </Button>
@@ -952,6 +957,13 @@ function App() {
           setSelectedCityInfo(null);
         }}
         city={selectedCityInfo}
+      />
+
+      <TravelStatsModal
+        visible={travelStatsVisible}
+        onClose={() => setTravelStatsVisible(false)}
+        routes={routes}
+        countryStats={stats}
       />
 
       <Modal
