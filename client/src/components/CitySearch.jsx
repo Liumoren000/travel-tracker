@@ -4,6 +4,7 @@ import { SearchOutlined, CarOutlined, GlobalOutlined, SendOutlined } from '@ant-
 import axios from 'axios';
 import { CITIES_DATABASE } from '../data/citiesDatabase';
 import { useLanguage } from '../hooks/useLanguage';
+import { useTheme } from '../hooks/useTheme';
 
 const CitySearch = ({ onAddCity, isFirst }) => {
   const [searchText, setSearchText] = useState('');
@@ -15,6 +16,7 @@ const CitySearch = ({ onAddCity, isFirst }) => {
   const searchTimeoutRef = useRef(null);
   const abortControllerRef = useRef(null);
   const { t } = useLanguage();
+  const { isDark } = useTheme();
 
   // 搜索城市（本地 + API）
   const handleSearch = useCallback((value) => {
@@ -167,10 +169,10 @@ const CitySearch = ({ onAddCity, isFirst }) => {
             left: 0,
             right: 0,
             zIndex: 1000,
-            background: '#fff',
-            border: '1px solid #d9d9d9',
+            background: isDark ? '#1f1f1f' : '#fff',
+            border: `1px solid ${isDark ? '#4d4d4d' : '#d9d9d9'}`,
             borderRadius: '0 0 4px 4px',
-            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+            boxShadow: `0 2px 8px rgba(0,0,0,${isDark ? 0.3 : 0.15})`,
             maxHeight: '300px',
             overflowY: 'auto'
           }}>
@@ -180,23 +182,24 @@ const CitySearch = ({ onAddCity, isFirst }) => {
                 style={{
                   padding: '8px 12px',
                   cursor: 'pointer',
-                  borderBottom: '1px solid #f0f0f0',
+                  borderBottom: `1px solid ${isDark ? '#3d3d3d' : '#f0f0f0'}`,
                   display: 'flex',
                   justifyContent: 'space-between',
-                  alignItems: 'center'
+                  alignItems: 'center',
+                  color: isDark ? '#fff' : '#333'
                 }}
                 onClick={() => handleSelect(option)}
-                onMouseEnter={(e) => e.currentTarget.style.background = '#f5f5f5'}
-                onMouseLeave={(e) => e.currentTarget.style.background = '#fff'}
+                onMouseEnter={(e) => e.currentTarget.style.background = isDark ? '#333' : '#f5f5f5'}
+                onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
               >
                 <div>
                   <div style={{ fontWeight: 500 }}>{option.name}</div>
                   {option.nameEn && (
-                    <div style={{ fontSize: 12, color: '#999' }}>{option.nameEn}</div>
+                    <div style={{ fontSize: 12, color: isDark ? '#999' : '#999' }}>{option.nameEn}</div>
                   )}
                 </div>
                 {option.country && (
-                  <div style={{ fontSize: 12, color: '#666' }}>{option.country}</div>
+                  <div style={{ fontSize: 12, color: isDark ? '#ccc' : '#666' }}>{option.country}</div>
                 )}
               </div>
             ))}
