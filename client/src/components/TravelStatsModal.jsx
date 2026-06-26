@@ -5,6 +5,7 @@ import {
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
 import { useLanguage } from '../hooks/useLanguage';
+import { useTheme } from '../hooks/useTheme';
 
 const COLORS = [
   '#1890ff', '#52c41a', '#fa8c16', '#f5222d', '#722ed1',
@@ -13,7 +14,12 @@ const COLORS = [
 ];
 
 const TravelStatsModal = ({ visible, onClose, routes, countryStats }) => {
-  const { language, t } = useLanguage();
+  const { language } = useLanguage();
+  const { isDark } = useTheme();
+  
+  const textColor = isDark ? '#ffffff' : '#333333';
+  const bgColor = isDark ? '#1f1f1f' : '#ffffff';
+  const gridColor = isDark ? '#4d4d4d' : '#e8e8e8';
 
   // 计算国家城市分布
   const countryCityData = useMemo(() => {
@@ -134,12 +140,16 @@ const TravelStatsModal = ({ visible, onClose, routes, countryStats }) => {
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip />
-                      <Legend />
+                      <Tooltip 
+                        contentStyle={{ background: bgColor, border: `1px solid ${gridColor}`, color: textColor }}
+                      />
+                      <Legend 
+                        wrapperStyle={{ color: textColor }}
+                      />
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>
+                  <div style={{ textAlign: 'center', padding: 40, color: textColor }}>
                     {language === 'zh' ? '暂无数据' : 'No data'}
                   </div>
                 )}
@@ -168,12 +178,16 @@ const TravelStatsModal = ({ visible, onClose, routes, countryStats }) => {
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip />
-                      <Legend />
+                      <Tooltip 
+                        contentStyle={{ background: bgColor, border: `1px solid ${gridColor}`, color: textColor }}
+                      />
+                      <Legend 
+                        wrapperStyle={{ color: textColor }}
+                      />
                     </PieChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>
+                  <div style={{ textAlign: 'center', padding: 40, color: textColor }}>
                     {language === 'zh' ? '暂无数据' : 'No data'}
                   </div>
                 )}
@@ -188,15 +202,18 @@ const TravelStatsModal = ({ visible, onClose, routes, countryStats }) => {
                 {routeDistanceData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={routeDistanceData}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis dataKey="name" angle={-30} textAnchor="end" height={80} />
-                      <YAxis />
-                      <Tooltip formatter={(value) => [`${value} km`, language === 'zh' ? '距离' : 'Distance']} />
+                      <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                      <XAxis dataKey="name" angle={-30} textAnchor="end" height={80} tick={{ fill: textColor }} />
+                      <YAxis tick={{ fill: textColor }} />
+                      <Tooltip 
+                        formatter={(value) => [`${value} km`, language === 'zh' ? '距离' : 'Distance']}
+                        contentStyle={{ background: bgColor, border: `1px solid ${gridColor}`, color: textColor }}
+                      />
                       <Bar dataKey="distance" fill="#1890ff" />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>
+                  <div style={{ textAlign: 'center', padding: 40, color: textColor }}>
                     {language === 'zh' ? '暂无数据' : 'No data'}
                   </div>
                 )}
@@ -211,15 +228,18 @@ const TravelStatsModal = ({ visible, onClose, routes, countryStats }) => {
                 {cityByCountryData.length > 0 ? (
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={cityByCountryData} layout="vertical">
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis type="number" />
-                      <YAxis type="category" dataKey="name" width={80} />
-                      <Tooltip formatter={(value) => [value, language === 'zh' ? '城市数' : 'Cities']} />
+                      <CartesianGrid strokeDasharray="3 3" stroke={gridColor} />
+                      <XAxis type="number" tick={{ fill: textColor }} />
+                      <YAxis type="category" dataKey="name" width={80} tick={{ fill: textColor }} />
+                      <Tooltip 
+                        formatter={(value) => [value, language === 'zh' ? '城市数' : 'Cities']}
+                        contentStyle={{ background: bgColor, border: `1px solid ${gridColor}`, color: textColor }}
+                      />
                       <Bar dataKey="cities" fill="#52c41a" />
                     </BarChart>
                   </ResponsiveContainer>
                 ) : (
-                  <div style={{ textAlign: 'center', padding: 40, color: '#999' }}>
+                  <div style={{ textAlign: 'center', padding: 40, color: textColor }}>
                     {language === 'zh' ? '暂无数据' : 'No data'}
                   </div>
                 )}
