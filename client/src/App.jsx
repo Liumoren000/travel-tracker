@@ -22,7 +22,11 @@ const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:3001/api';
 
 const ROUTE_COLORS = [
   '#1890ff', '#52c41a', '#fa8c16', '#f5222d', '#722ed1',
-  '#13c2c2', '#eb2f96', '#faad14', '#2f54eb', '#a0d911'
+  '#13c2c2', '#eb2f96', '#faad14', '#2f54eb', '#a0d911',
+  '#ff7a45', '#36cfc9', '#ffc53d', '#9254de', '#ff4d4f',
+  '#36cfc9', '#ff85c0', '#b37feb', '#597ef7', '#40a9ff',
+  '#95de64', '#ffd666', '#ff9c6e', '#69b1ff', '#85a8ff',
+  '#b388ff', '#ea80fc', '#ff80ab', '#ff8a80', '#ffcc80'
 ];
 
 const STORAGE_KEY = 'travel-tracker-routes';
