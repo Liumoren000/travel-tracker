@@ -14,7 +14,7 @@ const COLORS = [
 ];
 
 const TravelStatsModal = ({ visible, onClose, routes, countryStats }) => {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const { isDark } = useTheme();
   
   const textColor = isDark ? '#ffffff' : '#333333';
