@@ -13,7 +13,7 @@ const COLORS = [
 ];
 
 const TravelStatsModal = ({ visible, onClose, routes, countryStats }) => {
-  const { t } = useLanguage();
+  const { language } = useLanguage();
 
   // 计算国家城市分布
   const countryCityData = useMemo(() => {
