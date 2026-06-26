@@ -7,6 +7,7 @@ import 'leaflet-polylinedecorator';
 import { calculateRouteDistance, formatDistance, calculateSegmentDistances } from '../utils/distance';
 import { getCityDetails } from '../data/cityDetails';
 import { getWeather, formatWeatherHTML } from '../services/weather';
+import { generateAllFlightLinks } from '../utils/flightLinks';
 
 // 地图样式配置
 const MAP_STYLES = {
@@ -246,11 +247,27 @@ const Map = forwardRef(({
               const modeLabel = isFlight ? '✈️ 飞行' : isTrain ? '🚂 火车' : segment.mode === 'walking' ? '🚶 步行' : '🚗 驾车';
               const segDistance = segmentDistances[segIndex] ? segmentDistances[segIndex].formatted : '';
               
+              // 生成机票链接（如果是飞机段）
+              let flightLinksHTML = '';
+              if (isFlight) {
+                const links = generateAllFlightLinks(segment.from, segment.to);
+                const linkButtons = Object.entries(links).map(([key, link]) => 
+                  `<a href="${link.url}" target="_blank" rel="noopener noreferrer" style="padding:2px 6px;background:#1890ff;color:white;border-radius:3px;font-size:10px;text-decoration:none">${link.name}</a>`
+                ).join('');
+                flightLinksHTML = `
+                  <div style="margin-top:8px;padding-top:6px;border-top:1px solid #eee">
+                    <div style="font-size:11px;color:#666;margin-bottom:4px">查询机票价格：</div>
+                    <div style="display:flex;gap:4px;flex-wrap:wrap">${linkButtons}</div>
+                  </div>
+                `;
+              }
+              
               segPolyline.bindPopup(`
                 <div style="min-width:180px">
                   <div style="font-weight:bold;font-size:14px;color:${color}">${segment.from} → ${segment.to}</div>
                   <div style="font-size:12px;color:#999;margin-top:2px">${modeLabel}</div>
                   <div style="font-size:12px;color:#666;margin-top:4px">距离: ${segDistance}</div>
+                  ${flightLinksHTML}
                 </div>
               `);
               layersRef.current.push(segPolyline);
@@ -290,6 +307,22 @@ const Map = forwardRef(({
             }
 
             const modeLabel = isFlight ? '✈️ 飞行' : isTrain ? '🚂 火车' : route.mode === 'walking' ? '🚶 步行' : '🚗 驾车';
+            
+            // 生成机票链接（如果是飞机模式）
+            let flightLinksHTML = '';
+            if (isFlight && route.cities.length >= 2) {
+              const links = generateAllFlightLinks(route.cities[0].name, route.cities[route.cities.length - 1].name);
+              const linkButtons = Object.entries(links).map(([key, link]) => 
+                `<a href="${link.url}" target="_blank" rel="noopener noreferrer" style="padding:2px 6px;background:#1890ff;color:white;border-radius:3px;font-size:10px;text-decoration:none">${link.name}</a>`
+              ).join('');
+              flightLinksHTML = `
+                <div style="margin-top:8px;padding-top:6px;border-top:1px solid #eee">
+                  <div style="font-size:11px;color:#666;margin-bottom:4px">查询机票价格：</div>
+                  <div style="display:flex;gap:4px;flex-wrap:wrap">${linkButtons}</div>
+                </div>
+              `;
+            }
+            
             polyline.bindPopup(`
               <div style="min-width:180px">
                 <div style="font-weight:bold;font-size:14px;color:${color}">${routeName}</div>
@@ -298,6 +331,7 @@ const Map = forwardRef(({
                 <div style="font-size:12px;color:#666;margin-top:5px">
                   ${route.cities.map(c => c.name).join(' → ')}
                 </div>
+                ${flightLinksHTML}
               </div>
             `);
             layersRef.current.push(polyline);
