@@ -8,7 +8,7 @@ import { calculateRouteDistance, formatDistance, calculateSegmentDistances } fro
 import { getCityDetails } from '../data/cityDetails';
 import { getWeather, formatWeatherHTML } from '../services/weather';
 import { generateAllFlightLinks } from '../utils/flightLinks';
-import { resolveVisitedRegions, renderRegionOverlay } from '../utils/regionMatcher';
+import { resolveVisitedRegions, renderRegionOverlay, preloadRegionGeo } from '../utils/regionMatcher';
 
 // 地图样式配置
 const MAP_STYLES = {
@@ -92,6 +92,9 @@ const Map = forwardRef(({
     tileLayerRef.current = L.tileLayer(MAP_STYLES.standard.url, {
       attribution: MAP_STYLES.standard.attribution
     }).addTo(mapInstanceRef.current);
+
+    // 预加载行政区 GeoJSON, 避免首次点击时延迟
+    preloadRegionGeo();
 
     // 监听容器大小变化，更新地图
     const resizeObserver = new ResizeObserver(() => {
@@ -607,6 +610,12 @@ const Map = forwardRef(({
         const { visitedProvinces, visitedCountryCodes } = await resolveVisitedRegions(cities);
         if (cancelled || !mapInstanceRef.current) return;
 
+        console.log('[Map] 涂色更新:', {
+          cities: cities.length,
+          provinces: Array.from(visitedProvinces),
+          countries: Array.from(visitedCountryCodes),
+        });
+
         const group = await renderRegionOverlay(mapInstanceRef.current, {
           visitedProvinces,
           visitedCountryCodes,
@@ -623,8 +632,9 @@ const Map = forwardRef(({
           return;
         }
         regionLayerRef.current = group;
+        console.log('[Map] 涂色图层渲染完成');
       } catch (err) {
-        console.warn('[Map] 涂色图层渲染失败:', err);
+        console.error('[Map] 涂色图层渲染失败:', err);
       }
     };
 

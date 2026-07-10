@@ -216,7 +216,7 @@ export async function renderRegionOverlay(map, options = {}) {
 
   const chinaGeo = await loadChinaGeo();
   if (chinaGeo && chinaGeo.features) {
-    L.geoJSON(chinaGeo, {
+    const chinaLayer = L.geoJSON(chinaGeo, {
       style: (feature) => {
         const name = feature.properties?.name;
         const visited = name && visitedProvinces.has(name);
@@ -233,35 +233,45 @@ export async function renderRegionOverlay(map, options = {}) {
           layer.bindTooltip(name, { sticky: true, direction: 'top' });
         }
       },
-    }).addTo(group);
+    });
+    chinaLayer.addTo(group);
   }
 
-  const worldGeo = await loadWorldGeo();
-  if (worldGeo && worldGeo.features && worldByIsoCache && visitedCountryCodes.size > 0) {
-    L.geoJSON(worldGeo, {
-      filter: (feature) => {
-        const p = feature.properties || {};
-        const codes = [p.ISO_A2, p.ISO_A2_EH, p.ADM0_A3, p.SOV_A3];
-        return codes.some(c => c && visitedCountryCodes.has(c));
-      },
-      style: () => ({
-        color: highlightBorderColor,
-        weight: 1.2,
-        fillColor: highlightColor,
-        fillOpacity: highlightOpacity * 0.85,
-      }),
-      onEachFeature: (feature, layer) => {
-        const p = feature.properties || {};
-        const code = p.ISO_A2 || p.ISO_A2_EH;
-        const label = code ? visitedCountryLabels.get(code) : null;
-        const tooltipText = label || p.ADMIN || p.NAME;
-        if (tooltipText) layer.bindTooltip(tooltipText, { sticky: true });
-      },
-    }).addTo(group);
+  if (visitedCountryCodes.size > 0) {
+    const worldGeo = await loadWorldGeo();
+    if (worldGeo && worldGeo.features && worldByIsoCache) {
+      const worldLayer = L.geoJSON(worldGeo, {
+        filter: (feature) => {
+          const p = feature.properties || {};
+          const codes = [p.ISO_A2, p.ISO_A2_EH, p.ADM0_A3, p.SOV_A3];
+          return codes.some(c => c && visitedCountryCodes.has(c));
+        },
+        style: () => ({
+          color: highlightBorderColor,
+          weight: 1.2,
+          fillColor: highlightColor,
+          fillOpacity: highlightOpacity * 0.85,
+        }),
+        onEachFeature: (feature, layer) => {
+          const p = feature.properties || {};
+          const code = p.ISO_A2 || p.ISO_A2_EH;
+          const label = code ? visitedCountryLabels.get(code) : null;
+          const tooltipText = label || p.ADMIN || p.NAME;
+          if (tooltipText) layer.bindTooltip(tooltipText, { sticky: true });
+        },
+      });
+      worldLayer.addTo(group);
+    }
   }
 
   group.addTo(map);
   return group;
+}
+
+// 预加载, 避免用户首次点击时延迟
+export function preloadRegionGeo() {
+  loadChinaGeo();
+  loadWorldGeo();
 }
 
 export const __test__ = { pointInRing, pointInGeometry };
