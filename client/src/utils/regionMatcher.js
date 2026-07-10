@@ -1,11 +1,12 @@
 // 省级行政区 / 国家边界匹配工具
 // 数据源:
-//   - 中国省级: 阿里 DataV.GeoAtlas (https://geo.datav.aliyun.com)
+//   - 中国省级: longwosion/geojson-map-china (CORS 友好)
+//     注: 阿里 DataV.GeoAtlas 在浏览器中返回 403, 故改用 GitHub raw 镜像
 //   - 世界国家: Natural Earth 1:110m 简化版 (nvkelso/natural-earth-vector)
 
 import { getProvinceByCityName } from '../data/cityToProvince';
 
-const CHINA_PROVINCE_URL = 'https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json';
+const CHINA_PROVINCE_URL = 'https://raw.githubusercontent.com/longwosion/geojson-map-china/master/china.json';
 const WORLD_COUNTRIES_URLS = [
   'https://raw.githubusercontent.com/nvkelso/natural-earth-vector/master/geojson/ne_110m_admin_0_countries.geojson',
 ];
@@ -215,66 +216,109 @@ export async function renderRegionOverlay(map, options = {}) {
 
   const layers = [];
 
-  // 中国省级: 始终渲染 (作为底图)
+  // 中国省级: 用 L.polygon 直接渲染, 避免 L.GeoJSON 构造函数问题
   const chinaGeo = await loadChinaGeo();
   if (chinaGeo && chinaGeo.features && Array.isArray(chinaGeo.features)) {
     try {
-      const chinaLayer = L.geoJSON(chinaGeo, {
-        style: (feature) => {
-          const name = feature.properties?.name;
-          const visited = name && visitedProvinces.has(name);
-          return {
-            color: visited ? highlightBorderColor : borderColor,
-            weight: visited ? 2 : 1,
-            fillColor: visited ? highlightColor : baseColor,
-            fillOpacity: visited ? highlightOpacity : baseOpacity,
-          };
-        },
-        onEachFeature: (feature, layer) => {
-          const name = feature.properties?.name;
-          if (name) {
-            const visited = visitedProvinces.has(name);
-            layer.bindTooltip(
-              visited ? `✓ ${name}` : name,
-              { sticky: true, direction: 'top' }
-            );
-          }
-        },
+      chinaGeo.features.forEach((feature) => {
+        if (!feature || !feature.geometry) return;
+        const name = feature.properties?.name;
+        if (!name) return;
+        const visited = visitedProvinces.has(name);
+
+        const style = {
+          color: visited ? highlightBorderColor : borderColor,
+          weight: visited ? 2 : 1,
+          fillColor: visited ? highlightColor : baseColor,
+          fillOpacity: visited ? highlightOpacity : baseOpacity,
+        };
+
+        const tooltipText = visited ? `✓ ${name}` : name;
+        const geom = feature.geometry;
+
+        // 处理 Polygon 和 MultiPolygon
+        if (geom.type === 'Polygon') {
+          geom.coordinates.forEach((ring) => {
+            // ring[0] 是外环, 其余是洞
+            if (!ring || ring.length === 0) return;
+            const latlngs = ring.map(([lng, lat]) => [lat, lng]);
+            try {
+              const layer = L.polygon(latlngs, style);
+              layer.bindTooltip(tooltipText, { sticky: true, direction: 'top' });
+              layer.addTo(map);
+              layers.push(layer);
+            } catch (err) {
+              console.warn('[regionMatcher] polygon 渲染失败:', name, err);
+            }
+          });
+        } else if (geom.type === 'MultiPolygon') {
+          geom.coordinates.forEach((polygon) => {
+            if (!polygon || !polygon[0]) return;
+            const latlngs = polygon[0].map(([lng, lat]) => [lat, lng]);
+            try {
+              const layer = L.polygon(latlngs, style);
+              layer.bindTooltip(tooltipText, { sticky: true, direction: 'top' });
+              layer.addTo(map);
+              layers.push(layer);
+            } catch (err) {
+              console.warn('[regionMatcher] polygon 渲染失败:', name, err);
+            }
+          });
+        }
       });
-      chinaLayer.addTo(map);
-      layers.push(chinaLayer);
     } catch (err) {
       console.error('[regionMatcher] 中国图层渲染失败:', err);
     }
   }
 
-  // 世界国家: 仅渲染已访问的
+  // 世界国家: 同样用 L.polygon 直接渲染
   if (visitedCountryCodes.size > 0) {
     const worldGeo = await loadWorldGeo();
     if (worldGeo && worldGeo.features && worldByIsoCache) {
       try {
-        const worldLayer = L.geoJSON(worldGeo, {
-          filter: (feature) => {
-            const p = feature.properties || {};
-            const codes = [p.ISO_A2, p.ISO_A2_EH, p.ADM0_A3, p.SOV_A3];
-            return codes.some(c => c && visitedCountryCodes.has(c));
-          },
-          style: () => ({
+        worldGeo.features.forEach((feature) => {
+          if (!feature || !feature.geometry) return;
+          const p = feature.properties || {};
+          const codes = [p.ISO_A2, p.ISO_A2_EH, p.ADM0_A3, p.SOV_A3];
+          if (!codes.some(c => c && visitedCountryCodes.has(c))) return;
+
+          const code = p.ISO_A2 || p.ISO_A2_EH;
+          const label = code ? visitedCountryLabels.get(code) : null;
+          const tooltipText = label || p.ADMIN || p.NAME;
+          if (!tooltipText) return;
+
+          const style = {
             color: highlightBorderColor,
             weight: 1.5,
             fillColor: highlightColor,
             fillOpacity: highlightOpacity * 0.85,
-          }),
-          onEachFeature: (feature, layer) => {
-            const p = feature.properties || {};
-            const code = p.ISO_A2 || p.ISO_A2_EH;
-            const label = code ? visitedCountryLabels.get(code) : null;
-            const tooltipText = label || p.ADMIN || p.NAME;
-            if (tooltipText) layer.bindTooltip(`✓ ${tooltipText}`, { sticky: true });
-          },
+          };
+
+          const geom = feature.geometry;
+          if (geom.type === 'Polygon') {
+            geom.coordinates.forEach((ring) => {
+              if (!ring || ring.length === 0) return;
+              const latlngs = ring.map(([lng, lat]) => [lat, lng]);
+              try {
+                const layer = L.polygon(latlngs, style);
+                layer.bindTooltip(`✓ ${tooltipText}`, { sticky: true });
+                layer.addTo(map);
+                layers.push(layer);
+              } catch (err) { /* ignore */ }
+            });
+          } else if (geom.type === 'MultiPolygon') {
+            geom.coordinates.forEach((polygon) => {
+              if (!polygon || !polygon[0]) return;
+              const latlngs = polygon[0].map(([lng, lat]) => [lat, lng]);
+              try {
+                const layer = L.polygon(latlngs, style);
+                layer.bindTooltip(`✓ ${tooltipText}`, { sticky: true });
+                layer.addTo(map);
+                layers.push(layer);
+              } catch (err) { /* ignore */ }
+            });
+          }
         });
-        worldLayer.addTo(map);
-        layers.push(worldLayer);
       } catch (err) {
         console.error('[regionMatcher] 世界图层渲染失败:', err);
       }
