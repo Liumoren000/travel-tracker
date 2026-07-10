@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { Button, message, Dropdown, Space } from 'antd';
-import { DownloadOutlined, EnvironmentOutlined, MenuFoldOutlined, MenuUnfoldOutlined, GlobalOutlined } from '@ant-design/icons';
+import { DownloadOutlined, EnvironmentOutlined, MenuFoldOutlined, MenuUnfoldOutlined, GlobalOutlined, BgColorsOutlined } from '@ant-design/icons';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-polylinedecorator';
@@ -8,6 +8,7 @@ import { calculateRouteDistance, formatDistance, calculateSegmentDistances } fro
 import { getCityDetails } from '../data/cityDetails';
 import { getWeather, formatWeatherHTML } from '../services/weather';
 import { generateAllFlightLinks } from '../utils/flightLinks';
+import { resolveVisitedRegions, renderRegionOverlay } from '../utils/regionMatcher';
 
 // 地图样式配置
 const MAP_STYLES = {
@@ -50,8 +51,10 @@ const Map = forwardRef(({
   const layersRef = useRef([]);
   const clickHandlerRef = useRef(null);
   const tileLayerRef = useRef(null);
+  const regionLayerRef = useRef(null);
   const [exporting, setExporting] = useState(false);
   const [mapStyle, setMapStyle] = useState(isDark ? 'dark' : 'standard');
+  const [showRegion, setShowRegion] = useState(true);
 
   // 监听深色模式变化，自动切换地图样式
   useEffect(() => {
@@ -569,6 +572,73 @@ const Map = forwardRef(({
     }
   }, [routes, currentRoute, selectedRouteIndex, onDeleteCity]);
 
+  // 省级行政区 / 国家涂色图层
+  useEffect(() => {
+    if (!mapInstanceRef.current) return;
+
+    let cancelled = false;
+
+    const updateRegionLayer = async () => {
+      if (regionLayerRef.current) {
+        try { regionLayerRef.current.remove(); } catch (e) { /* ignore */ }
+        regionLayerRef.current = null;
+      }
+
+      if (!showRegion) return;
+
+      const citySet = new Set();
+      const cities = [];
+      const collect = (route) => {
+        if (!route || !Array.isArray(route.cities)) return;
+        route.cities.forEach((city) => {
+          if (!city || typeof city.lat !== 'number' || typeof city.lng !== 'number') return;
+          const key = `${city.name || ''}_${city.lat}_${city.lng}`;
+          if (citySet.has(key)) return;
+          citySet.add(key);
+          cities.push(city);
+        });
+      };
+      if (Array.isArray(routes)) routes.forEach(collect);
+      if (currentRoute) collect(currentRoute);
+
+      if (cities.length === 0) return;
+
+      try {
+        const { visitedProvinces, visitedCountryCodes } = await resolveVisitedRegions(cities);
+        if (cancelled || !mapInstanceRef.current) return;
+
+        const group = await renderRegionOverlay(mapInstanceRef.current, {
+          visitedProvinces,
+          visitedCountryCodes,
+          highlightColor: isDark ? '#40a9ff' : '#1890ff',
+          baseColor: isDark ? '#2a2a2a' : '#e8e8e8',
+          borderColor: isDark ? '#555555' : '#a0a0a0',
+          highlightBorderColor: isDark ? '#69c0ff' : '#096dd9',
+          highlightOpacity: isDark ? 0.45 : 0.55,
+          baseOpacity: isDark ? 0.18 : 0.25,
+        });
+
+        if (cancelled) {
+          if (group) try { group.remove(); } catch (e) { /* ignore */ }
+          return;
+        }
+        regionLayerRef.current = group;
+      } catch (err) {
+        console.warn('[Map] 涂色图层渲染失败:', err);
+      }
+    };
+
+    updateRegionLayer();
+
+    return () => {
+      cancelled = true;
+      if (regionLayerRef.current) {
+        try { regionLayerRef.current.remove(); } catch (e) { /* ignore */ }
+        regionLayerRef.current = null;
+      }
+    };
+  }, [routes, currentRoute, showRegion, isDark]);
+
   const handleExport = async () => {
     if (routes.length === 0 && !currentRoute) {
       message.warning('没有可导出的轨迹');
@@ -770,6 +840,23 @@ const Map = forwardRef(({
             title="切换地图样式"
           />
         </Dropdown>
+        <Button
+          icon={<BgColorsOutlined />}
+          onClick={() => setShowRegion(v => !v)}
+          type={showRegion ? 'primary' : 'default'}
+          style={{
+            background: showRegion ? '#1890ff' : 'rgba(255, 255, 255, 0.95)',
+            border: '1px solid #d9d9d9',
+            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
+            width: '36px',
+            height: '36px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: showRegion ? '#fff' : undefined
+          }}
+          title={showRegion ? '隐藏行政区涂色' : '显示行政区涂色'}
+        />
       </div>
 
       {/* 右上角：导出按钮 */}
