@@ -144,3 +144,69 @@ export function estimateShareUrlLength(target) {
     : buildShareUrl(target);
   return url ? url.length : 0;
 }
+
+// 从城市列表生成简单的直线轨迹 (无需 OSRM)
+export function buildSimpleRoute(cities, mode = 'driving') {
+  if (!Array.isArray(cities) || cities.length < 2) return null;
+
+  const validCities = cities.filter(c => c && typeof c.lat === 'number' && typeof c.lng === 'number');
+  if (validCities.length < 2) return null;
+
+  const segments = [];
+  let allCoords = [];
+
+  for (let i = 0; i < validCities.length - 1; i++) {
+    const from = validCities[i];
+    const to = validCities[i + 1];
+    const segMode = from.mode || to.mode || mode;
+
+    // 简单的直线插值 (20 个点)
+    const steps = 20;
+    const segCoords = [];
+    for (let s = 0; s <= steps; s++) {
+      const lat = from.lat + (to.lat - from.lat) * (s / steps);
+      const lng = from.lng + (to.lng - from.lng) * (s / steps);
+      segCoords.push([lat, lng]);
+    }
+
+    if (i === 0) {
+      allCoords = [...segCoords];
+    } else {
+      allCoords = [...allCoords, ...segCoords.slice(1)];
+    }
+
+    segments.push({
+      from: from.name,
+      to: to.name,
+      mode: segMode,
+      coordinates: segCoords
+    });
+  }
+
+  return {
+    cities: validCities,
+    coordinates: allCoords,
+    segments
+  };
+}
+
+// 为导入的路线填充坐标和段 (用于分享接收后渲染)
+export function enrichImportedRoutes(routes) {
+  if (!Array.isArray(routes)) return [];
+  return routes.map(route => {
+    if (!route || !Array.isArray(route.cities) || route.cities.length < 2) {
+      return route;
+    }
+    if (Array.isArray(route.coordinates) && route.coordinates.length > 0) {
+      return route; // 已有坐标, 跳过
+    }
+    const enriched = buildSimpleRoute(route.cities, route.mode || 'driving');
+    if (!enriched) return route;
+    return {
+      ...route,
+      cities: enriched.cities,
+      coordinates: enriched.coordinates,
+      segments: enriched.segments
+    };
+  });
+}

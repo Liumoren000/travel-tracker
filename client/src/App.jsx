@@ -14,7 +14,7 @@ import { useTheme } from './hooks/useTheme.jsx';
 import { useLanguage } from './hooks/useLanguage.jsx';
 import { downloadGPX, importGPXFile } from './utils/gpx';
 import { generateAllFlightLinks } from './utils/flightLinks';
-import { parseShareHash, clearShareHash } from './utils/routeShare';
+import { parseShareHash, clearShareHash, enrichImportedRoutes } from './utils/routeShare';
 import { CITIES_DATABASE } from './data/citiesDatabase';
 import './App.css';
 
@@ -180,8 +180,9 @@ function App() {
     if (!shared) return;
 
     if (shared.type === 'all') {
-      // 多条路线: 直接加入地图
-      const routesToAdd = shared.data.map((r, i) => ({
+      // 多条路线: 直接加入地图 (自动生成直线轨迹)
+      const enrichedRoutes = enrichImportedRoutes(shared.data);
+      const routesToAdd = enrichedRoutes.map((r, i) => ({
         ...r,
         color: r.color || ROUTE_COLORS[(routes.length + i) % ROUTE_COLORS.length]
       }));
@@ -212,8 +213,9 @@ function App() {
         onCancel: () => clearShareHash()
       });
     } else if (shared.type === 'single') {
-      // 单条路线: 加载到编辑列表
-      const route = shared.data;
+      // 单条路线: 加载到编辑列表 (自动生成直线轨迹)
+      const enriched = enrichImportedRoutes([shared.data])[0] || shared.data;
+      const route = enriched;
       Modal.confirm({
         title: '收到一条分享的路线',
         content: (
@@ -233,7 +235,11 @@ function App() {
         cancelText: '忽略',
         onOk: () => {
           setCities(route.cities);
-          setCurrentRoute({ ...route, coordinates: [] });
+          setCurrentRoute({
+            ...route,
+            coordinates: route.coordinates || [],
+            segments: route.segments || []
+          });
           message.success('已加载分享的路线');
           clearShareHash();
         },
