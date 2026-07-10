@@ -1,5 +1,7 @@
 // 路线分享工具 - 通过 URL hash 编码/解码路线数据
 // 压缩格式: lz-string + 紧凑字段名 + 坐标精度限制
+// 单条: #route=<lz>
+// 多条: #routes=<lz>
 
 import LZString from 'lz-string';
 
@@ -58,8 +60,7 @@ function expandRoute(compact) {
 export function encodeRoute(route) {
   const compact = compactRoute(route);
   if (!compact) return null;
-  const json = JSON.stringify(compact);
-  return LZString.compressToEncodedURIComponent(json);
+  return LZString.compressToEncodedURIComponent(JSON.stringify(compact));
 }
 
 export function decodeRoute(encoded) {
@@ -67,10 +68,31 @@ export function decodeRoute(encoded) {
   try {
     const json = LZString.decompressFromEncodedURIComponent(encoded);
     if (!json) return null;
-    const compact = JSON.parse(json);
-    return expandRoute(compact);
+    return expandRoute(JSON.parse(json));
   } catch (err) {
-    console.warn('[routeShare] decode failed:', err);
+    console.warn('[routeShare] decode route failed:', err);
+    return null;
+  }
+}
+
+// 多线路编解码 (用于分享所有路线)
+export function encodeRoutes(routes) {
+  if (!Array.isArray(routes) || routes.length === 0) return null;
+  const compacts = routes.map(compactRoute).filter(Boolean);
+  if (compacts.length === 0) return null;
+  return LZString.compressToEncodedURIComponent(JSON.stringify(compacts));
+}
+
+export function decodeRoutes(encoded) {
+  if (!encoded) return null;
+  try {
+    const json = LZString.decompressFromEncodedURIComponent(encoded);
+    if (!json) return null;
+    const compacts = JSON.parse(json);
+    if (!Array.isArray(compacts)) return null;
+    return compacts.map(expandRoute).filter(Boolean);
+  } catch (err) {
+    console.warn('[routeShare] decode routes failed:', err);
     return null;
   }
 }
@@ -82,26 +104,43 @@ export function buildShareUrl(route) {
   return `${origin}${pathname}#route=${encoded}`;
 }
 
+export function buildShareAllUrl(routes) {
+  const encoded = encodeRoutes(routes);
+  if (!encoded) return null;
+  const { origin, pathname } = window.location;
+  return `${origin}${pathname}#routes=${encoded}`;
+}
+
+// 解析 hash, 返回 { type: 'single'|'all', data }
+// - single: data 是单条路线
+// - all:    data 是路线数组
 export function parseShareHash() {
   if (typeof window === 'undefined') return null;
   const hash = window.location.hash || '';
-  const match = hash.match(/^#route=(.+)$/);
-  if (!match) return null;
-  return decodeRoute(match[1]);
+
+  let m = hash.match(/^#routes=(.+)$/);
+  if (m) {
+    const routes = decodeRoutes(m[1]);
+    if (routes && routes.length > 0) return { type: 'all', data: routes };
+  }
+
+  m = hash.match(/^#route=(.+)$/);
+  if (m) {
+    const route = decodeRoute(m[1]);
+    if (route) return { type: 'single', data: route };
+  }
+
+  return null;
 }
 
 export function clearShareHash() {
   if (typeof window === 'undefined') return;
-  // 保留其他 hash, 只移除 #route= 部分
-  const newHash = window.location.hash.replace(/#route=[^&]+/, '').replace(/^#$/, '');
-  if (newHash) {
-    history.replaceState(null, '', window.location.pathname + window.location.search + newHash);
-  } else {
-    history.replaceState(null, '', window.location.pathname + window.location.search);
-  }
+  history.replaceState(null, '', window.location.pathname + window.location.search);
 }
 
-export function estimateShareUrlLength(route) {
-  const url = buildShareUrl(route);
+export function estimateShareUrlLength(target) {
+  const url = Array.isArray(target)
+    ? buildShareAllUrl(target)
+    : buildShareUrl(target);
   return url ? url.length : 0;
 }

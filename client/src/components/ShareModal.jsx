@@ -1,19 +1,30 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Modal, Input, Button, message, Space, Tag, QRCode } from 'antd';
 import { CopyOutlined, LinkOutlined, ExportOutlined } from '@ant-design/icons';
-import { buildShareUrl, encodeRoute, estimateShareUrlLength } from '../utils/routeShare';
+import { buildShareUrl, buildShareAllUrl, estimateShareUrlLength } from '../utils/routeShare';
 
-const ShareModal = ({ open, route, onClose }) => {
+const ShareModal = ({ open, route, routes, onClose }) => {
+  // routes 优先于 route
+  const allRoutes = useMemo(() => {
+    if (Array.isArray(routes) && routes.length > 0) return routes;
+    if (route) return [route];
+    return [];
+  }, [route, routes]);
+
+  const isMulti = allRoutes.length > 1;
+
   const [url, setUrl] = useState('');
   const [urlLength, setUrlLength] = useState(0);
 
   useEffect(() => {
-    if (open && route) {
-      const shareUrl = buildShareUrl(route);
+    if (open && allRoutes.length > 0) {
+      const shareUrl = isMulti
+        ? buildShareAllUrl(allRoutes)
+        : buildShareUrl(allRoutes[0]);
       setUrl(shareUrl || '');
-      setUrlLength(estimateShareUrlLength(route));
+      setUrlLength(estimateShareUrlLength(isMulti ? allRoutes : allRoutes[0]));
     }
-  }, [open, route]);
+  }, [open, allRoutes, isMulti]);
 
   const handleCopy = async () => {
     if (!url) return;
@@ -21,7 +32,6 @@ const ShareModal = ({ open, route, onClose }) => {
       await navigator.clipboard.writeText(url);
       message.success('链接已复制到剪贴板');
     } catch (err) {
-      // 降级方案: 选中文本
       const input = document.getElementById('share-url-input');
       if (input) {
         input.select();
@@ -37,15 +47,15 @@ const ShareModal = ({ open, route, onClose }) => {
     if (url) window.open(url, '_blank');
   };
 
-  if (!route) return null;
+  if (allRoutes.length === 0) return null;
 
-  const cityCount = route.cities?.length || 0;
-  const cityList = route.cities?.map(c => c.name).join(' → ') || '';
   const tooLong = urlLength > 2000;
+
+  const totalCities = allRoutes.reduce((sum, r) => sum + (r.cities?.length || 0), 0);
 
   return (
     <Modal
-      title={<Space><LinkOutlined />分享路线</Space>}
+      title={<Space><LinkOutlined />分享{isMulti ? '所有路线' : '路线'}</Space>}
       open={open}
       onCancel={onClose}
       footer={[
@@ -54,15 +64,34 @@ const ShareModal = ({ open, route, onClose }) => {
       width={520}
     >
       <div style={{ marginBottom: 16 }}>
-        <div style={{ fontSize: 16, fontWeight: 500, marginBottom: 4 }}>
-          {route.name || '未命名路线'}
-        </div>
         <Space size="small" wrap>
-          <Tag color="blue">{cityCount} 个城市</Tag>
-          {route.mode && <Tag>{route.mode === 'driving' ? '驾车' : route.mode === 'flight' ? '飞行' : route.mode === 'train' ? '火车' : '步行'}</Tag>}
+          <Tag color="blue">{allRoutes.length} 条路线</Tag>
+          <Tag color="cyan">{totalCities} 个城市</Tag>
         </Space>
-        <div style={{ marginTop: 8, fontSize: 13, color: '#666' }}>
-          {cityList}
+
+        <div style={{ marginTop: 12, maxHeight: 200, overflowY: 'auto' }}>
+          {allRoutes.map((r, i) => {
+            const cityNames = r.cities?.map(c => c.name).join(' → ') || '';
+            return (
+              <div
+                key={i}
+                style={{
+                  padding: '8px 10px',
+                  marginBottom: 6,
+                  background: '#fafafa',
+                  borderRadius: 4,
+                  borderLeft: `3px solid ${r.color || '#1890ff'}`
+                }}
+              >
+                <div style={{ fontSize: 14, fontWeight: 500 }}>
+                  {r.name || `线路 ${i + 1}`}
+                </div>
+                <div style={{ fontSize: 12, color: '#666', marginTop: 2 }}>
+                  {r.cities?.length || 0} 城市 · {cityNames}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -109,8 +138,8 @@ const ShareModal = ({ open, route, onClose }) => {
       <div style={{ marginTop: 16, padding: 12, background: '#f5f5f5', borderRadius: 4, fontSize: 12, color: '#666' }}>
         <div style={{ fontWeight: 500, marginBottom: 4 }}>使用说明:</div>
         <ul style={{ margin: 0, paddingLeft: 20 }}>
-          <li>任何人打开此链接都能看到这条路线</li>
-          <li>链接包含完整路线数据, 无需服务器存储</li>
+          <li>链接包含所有路线的完整数据, 无需服务器存储</li>
+          <li>打开链接将一次性导入地图上的全部路线</li>
           <li>支持中文和英文城市名</li>
         </ul>
       </div>

@@ -708,22 +708,17 @@ const Map = forwardRef(({
 
   const hasRoutes = routes.length > 0 || currentRoute;
 
-  const getShareableRoute = () => {
-    if (typeof selectedRouteIndex === 'number' && routes[selectedRouteIndex]) {
-      return routes[selectedRouteIndex];
-    }
+  const getShareableRoutes = () => {
+    const all = [...routes];
     if (currentRoute && Array.isArray(currentRoute.cities) && currentRoute.cities.length >= 2) {
-      return currentRoute;
+      all.push(currentRoute);
     }
-    if (routes.length > 0) {
-      return routes[routes.length - 1];
-    }
-    return null;
+    return all;
   };
 
   const handleShareClick = () => {
-    const r = getShareableRoute();
-    if (!r) {
+    const r = getShareableRoutes();
+    if (r.length === 0) {
       message.warning('暂无可分享的路线');
       return;
     }
@@ -830,7 +825,7 @@ const Map = forwardRef(({
 
       <ShareModal
         open={shareModalOpen}
-        route={getShareableRoute()}
+        routes={getShareableRoutes()}
         onClose={() => setShareModalOpen(false)}
       />
 

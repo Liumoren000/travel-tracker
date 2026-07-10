@@ -176,40 +176,70 @@ function App() {
 
   // 从 URL hash 加载分享的路线
   useEffect(() => {
-    const sharedRoute = parseShareHash();
-    if (!sharedRoute) return;
+    const shared = parseShareHash();
+    if (!shared) return;
 
-    const cityCount = sharedRoute.cities?.length || 0;
-    Modal.confirm({
-      title: '收到一条分享的路线',
-      content: (
-        <div>
-          <div style={{ marginBottom: 8 }}>
-            <strong>{sharedRoute.name || '未命名路线'}</strong>
+    if (shared.type === 'all') {
+      // 多条路线: 直接加入地图
+      const routesToAdd = shared.data.map((r, i) => ({
+        ...r,
+        color: r.color || ROUTE_COLORS[(routes.length + i) % ROUTE_COLORS.length]
+      }));
+      Modal.confirm({
+        title: `收到 ${routesToAdd.length} 条分享的路线`,
+        content: (
+          <div>
+            {routesToAdd.map((r, i) => (
+              <div key={i} style={{ marginBottom: 8, padding: 8, background: '#fafafa', borderRadius: 4, borderLeft: `3px solid ${r.color}` }}>
+                <div style={{ fontWeight: 500 }}>{r.name || `线路 ${i + 1}`}</div>
+                <div style={{ fontSize: 12, color: '#666' }}>
+                  {r.cities?.length || 0} 城市 · {r.cities?.map(c => c.name).join(' → ')}
+                </div>
+              </div>
+            ))}
+            <div style={{ marginTop: 12, color: '#1890ff' }}>
+              是否添加到地图?
+            </div>
           </div>
-          <div style={{ color: '#666', fontSize: 13 }}>
-            {cityCount} 个城市: {sharedRoute.cities?.map(c => c.name).join(' → ')}
+        ),
+        okText: '添加到地图',
+        cancelText: '忽略',
+        onOk: () => {
+          setRoutes(prev => [...prev, ...routesToAdd]);
+          message.success(`已导入 ${routesToAdd.length} 条路线`);
+          clearShareHash();
+        },
+        onCancel: () => clearShareHash()
+      });
+    } else if (shared.type === 'single') {
+      // 单条路线: 加载到编辑列表
+      const route = shared.data;
+      Modal.confirm({
+        title: '收到一条分享的路线',
+        content: (
+          <div>
+            <div style={{ marginBottom: 8 }}>
+              <strong>{route.name || '未命名路线'}</strong>
+            </div>
+            <div style={{ color: '#666', fontSize: 13 }}>
+              {route.cities?.length || 0} 个城市: {route.cities?.map(c => c.name).join(' → ')}
+            </div>
+            <div style={{ marginTop: 12, color: '#1890ff' }}>
+              是否加载到当前编辑列表?
+            </div>
           </div>
-          <div style={{ marginTop: 12, color: '#1890ff' }}>
-            是否加载到当前编辑列表?
-          </div>
-        </div>
-      ),
-      okText: '加载',
-      cancelText: '忽略',
-      onOk: () => {
-        setCities(sharedRoute.cities);
-        setCurrentRoute({
-          ...sharedRoute,
-          coordinates: []
-        });
-        message.success('已加载分享的路线');
-        clearShareHash();
-      },
-      onCancel: () => {
-        clearShareHash();
-      }
-    });
+        ),
+        okText: '加载',
+        cancelText: '忽略',
+        onOk: () => {
+          setCities(route.cities);
+          setCurrentRoute({ ...route, coordinates: [] });
+          message.success('已加载分享的路线');
+          clearShareHash();
+        },
+        onCancel: () => clearShareHash()
+      });
+    }
   }, []);
 
   const handleAddCity = (city) => {
