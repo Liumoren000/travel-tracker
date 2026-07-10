@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { Button, message, Dropdown, Space } from 'antd';
-import { DownloadOutlined, EnvironmentOutlined, MenuFoldOutlined, MenuUnfoldOutlined, GlobalOutlined, BgColorsOutlined } from '@ant-design/icons';
+import { DownloadOutlined, EnvironmentOutlined, MenuFoldOutlined, MenuUnfoldOutlined, GlobalOutlined } from '@ant-design/icons';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-polylinedecorator';
@@ -8,7 +8,6 @@ import { calculateRouteDistance, formatDistance, calculateSegmentDistances } fro
 import { getCityDetails } from '../data/cityDetails';
 import { getWeather, formatWeatherHTML } from '../services/weather';
 import { generateAllFlightLinks } from '../utils/flightLinks';
-import { resolveVisitedRegions, renderRegionOverlay, preloadRegionGeo } from '../utils/regionMatcher';
 
 // 地图样式配置
 const MAP_STYLES = {
@@ -51,10 +50,8 @@ const Map = forwardRef(({
   const layersRef = useRef([]);
   const clickHandlerRef = useRef(null);
   const tileLayerRef = useRef(null);
-  const regionLayerRef = useRef(null);
   const [exporting, setExporting] = useState(false);
   const [mapStyle, setMapStyle] = useState(isDark ? 'dark' : 'standard');
-  const [showRegion, setShowRegion] = useState(true);
 
   // 监听深色模式变化，自动切换地图样式
   useEffect(() => {
@@ -92,9 +89,6 @@ const Map = forwardRef(({
     tileLayerRef.current = L.tileLayer(MAP_STYLES.standard.url, {
       attribution: MAP_STYLES.standard.attribution
     }).addTo(mapInstanceRef.current);
-
-    // 预加载行政区 GeoJSON, 避免首次点击时延迟
-    preloadRegionGeo();
 
     // 监听容器大小变化，更新地图
     const resizeObserver = new ResizeObserver(() => {
@@ -575,94 +569,6 @@ const Map = forwardRef(({
     }
   }, [routes, currentRoute, selectedRouteIndex, onDeleteCity]);
 
-  // 省级行政区 / 国家涂色图层
-  useEffect(() => {
-    if (!mapInstanceRef.current) return;
-
-    let cancelled = false;
-
-    const updateRegionLayer = async () => {
-      if (regionLayerRef.current) {
-        try { regionLayerRef.current.remove(); } catch (e) { /* ignore */ }
-        regionLayerRef.current = null;
-      }
-
-      if (!showRegion) return;
-
-      const citySet = new Set();
-      const cities = [];
-      const collect = (route) => {
-        if (!route || !Array.isArray(route.cities)) return;
-        route.cities.forEach((city) => {
-          if (!city || typeof city.lat !== 'number' || typeof city.lng !== 'number') return;
-          const key = `${city.name || ''}_${city.lat}_${city.lng}`;
-          if (citySet.has(key)) return;
-          citySet.add(key);
-          cities.push(city);
-        });
-      };
-      if (Array.isArray(routes)) routes.forEach(collect);
-      if (currentRoute) collect(currentRoute);
-
-      // 即使没有城市, 也始终渲染底图 (浅灰填充的中国轮廓)
-      let visitedProvinces = new Set();
-      let visitedCountryCodes = new Set();
-      let visitedCountryLabels = new Map();
-
-      if (cities.length > 0) {
-        try {
-          const result = await resolveVisitedRegions(cities);
-          visitedProvinces = result.visitedProvinces;
-          visitedCountryCodes = result.visitedCountryCodes;
-          visitedCountryLabels = result.visitedCountryLabels;
-        } catch (err) {
-          console.error('[Map] 解析访问区域失败:', err);
-        }
-      }
-
-      if (cancelled || !mapInstanceRef.current) return;
-
-      console.log('[Map] 涂色更新:', {
-        cities: cities.length,
-        provinces: Array.from(visitedProvinces),
-        countries: Array.from(visitedCountryCodes),
-      });
-
-      try {
-        const group = await renderRegionOverlay(mapInstanceRef.current, {
-          visitedProvinces,
-          visitedCountryCodes,
-          visitedCountryLabels,
-          highlightColor: isDark ? '#40a9ff' : '#1890ff',
-          baseColor: isDark ? '#3a3a3a' : '#e8e8e8',
-          borderColor: isDark ? '#666666' : '#a8a8a8',
-          highlightBorderColor: isDark ? '#69c0ff' : '#096dd9',
-          highlightOpacity: isDark ? 0.5 : 0.6,
-          baseOpacity: isDark ? 0.35 : 0.4,
-        });
-
-        if (cancelled) {
-          if (group) try { group.remove(); } catch (e) { /* ignore */ }
-          return;
-        }
-        regionLayerRef.current = group;
-        console.log('[Map] 涂色图层渲染完成, 已访问:', visitedProvinces.size, '省');
-      } catch (err) {
-        console.error('[Map] 涂色图层渲染失败:', err);
-      }
-    };
-
-    updateRegionLayer();
-
-    return () => {
-      cancelled = true;
-      if (regionLayerRef.current) {
-        try { regionLayerRef.current.remove(); } catch (e) { /* ignore */ }
-        regionLayerRef.current = null;
-      }
-    };
-  }, [routes, currentRoute, showRegion, isDark]);
-
   const handleExport = async () => {
     if (routes.length === 0 && !currentRoute) {
       message.warning('没有可导出的轨迹');
@@ -864,43 +770,6 @@ const Map = forwardRef(({
             title="切换地图样式"
           />
         </Dropdown>
-        <Button
-          icon={<BgColorsOutlined />}
-          onClick={() => {
-            console.log('[Map] 切换涂色状态, 当前:', showRegion);
-            setShowRegion(v => !v);
-          }}
-          type={showRegion ? 'primary' : 'default'}
-          style={{
-            background: showRegion ? '#1890ff' : 'rgba(255, 255, 255, 0.95)',
-            border: '1px solid #d9d9d9',
-            boxShadow: '0 2px 8px rgba(0, 0, 0, 0.15)',
-            width: '36px',
-            height: '36px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: showRegion ? '#fff' : undefined
-          }}
-          title={showRegion ? '隐藏行政区涂色' : '显示行政区涂色'}
-        />
-      </div>
-
-      {/* 涂色状态指示器 */}
-      <div style={{
-        position: 'absolute',
-        top: '60px',
-        right: '10px',
-        zIndex: 1000,
-        background: showRegion ? 'rgba(24, 144, 255, 0.9)' : 'rgba(0,0,0,0.6)',
-        color: 'white',
-        padding: '4px 12px',
-        borderRadius: '12px',
-        fontSize: '12px',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
-        pointerEvents: 'none'
-      }}>
-        涂色: {showRegion ? '开' : '关'}
       </div>
 
       {/* 右上角：导出按钮 */}
