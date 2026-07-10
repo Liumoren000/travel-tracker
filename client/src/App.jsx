@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Layout, message, Modal, Input, Button, Tag, List, Popconfirm, AutoComplete, Radio, Space, Select } from 'antd';
-import { EnvironmentOutlined, DeleteOutlined, ClearOutlined, EyeOutlined, PlusOutlined, EditOutlined, SaveOutlined, CloseOutlined, SearchOutlined, ArrowUpOutlined, ArrowDownOutlined, CarOutlined, GlobalOutlined, SendOutlined, MenuFoldOutlined, MenuUnfoldOutlined, UploadOutlined, DownloadOutlined, BulbOutlined, BarChartOutlined } from '@ant-design/icons';
+import { EnvironmentOutlined, DeleteOutlined, ClearOutlined, EyeOutlined, PlusOutlined, EditOutlined, SaveOutlined, CloseOutlined, SearchOutlined, ArrowUpOutlined, ArrowDownOutlined, CarOutlined, GlobalOutlined, SendOutlined, MenuFoldOutlined, MenuUnfoldOutlined, UploadOutlined, DownloadOutlined, BulbOutlined, BarChartOutlined, ToolOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import Map from './components/Map';
 import CitySearch from './components/CitySearch';
@@ -15,6 +15,7 @@ import { useLanguage } from './hooks/useLanguage.jsx';
 import { downloadGPX, importGPXFile } from './utils/gpx';
 import { generateAllFlightLinks } from './utils/flightLinks';
 import { parseShareHash, clearShareHash, enrichImportedRoutes } from './utils/routeShare';
+import { regenerateRoutes, generateRoutePath } from './utils/routeGenerator';
 import { CITIES_DATABASE } from './data/citiesDatabase';
 import './App.css';
 
@@ -341,75 +342,54 @@ function App() {
     setLoading(true);
     try {
       const name = `${cities[0].name} → ${cities[cities.length - 1].name}`;
-      let allCoords = [];
-      const segments = [];
-
-      for (let i = 0; i < cities.length - 1; i++) {
-        const from = cities[i];
-        const to = cities[i + 1];
-        const mode = to.mode || 'driving';
-
-        if (mode === 'flight') {
-          // Flight: straight line
-          const segCoords = [];
-          const steps = 20;
-          for (let s = 0; s <= steps; s++) {
-            const lat = from.lat + (to.lat - from.lat) * (s / steps);
-            const lng = from.lng + (to.lng - from.lng) * (s / steps);
-            segCoords.push([lat, lng]);
-          }
-          if (i === 0) {
-            allCoords = [...segCoords];
-          } else {
-            allCoords = [...allCoords, ...segCoords.slice(1)];
-          }
-          segments.push({ from: from.name, to: to.name, mode, coordinates: segCoords });
-        } else {
-          // Ground transport: use OSRM with fallback to straight line
-          try {
-            const profile = mode === 'walking' ? 'foot' : 'driving';
-            const coordinates = `${from.lng},${from.lat};${to.lng},${to.lat}`;
-            const response = await axios.get(
-              `https://router.project-osrm.org/route/v1/${profile}/${coordinates}?overview=full&geometries=geojson`,
-              { timeout: 10000 }
-            );
-
-            if (response.data.routes && response.data.routes.length > 0) {
-              const route = response.data.routes[0];
-              const segCoords = route.geometry.coordinates.map(coord => [coord[1], coord[0]]);
-              if (i === 0) {
-                allCoords = [...segCoords];
-              } else {
-                allCoords = [...allCoords, ...segCoords.slice(1)];
-              }
-              segments.push({ from: from.name, to: to.name, mode, coordinates: segCoords });
-            } else {
-              throw new Error('No route found');
-            }
-          } catch (err) {
-            // Fallback to straight line
-            const segCoords = [];
-            const steps = 20;
-            for (let s = 0; s <= steps; s++) {
-              const lat = from.lat + (to.lat - from.lat) * (s / steps);
-              const lng = from.lng + (to.lng - from.lng) * (s / steps);
-              segCoords.push([lat, lng]);
-            }
-            if (i === 0) {
-              allCoords = [...segCoords];
-            } else {
-              allCoords = [...allCoords, ...segCoords.slice(1)];
-            }
-            segments.push({ from: from.name, to: to.name, mode, coordinates: segCoords });
-          }
-        }
-      }
-
-      setCurrentRoute({ name, cities: [...cities], coordinates: allCoords, segments });
+      const path = await generateRoutePath(cities);
+      setCurrentRoute({
+        name,
+        cities: [...cities],
+        coordinates: path.coordinates,
+        segments: path.segments
+      });
       message.success('轨迹生成成功');
     } catch (error) {
       console.error('生成轨迹失败:', error);
       message.error('生成轨迹失败，请重试');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 修复缺失轨迹的路线
+  const handleFixMissingRoutes = async () => {
+    const broken = routes.filter(r => !r.coordinates || r.coordinates.length === 0);
+    if (broken.length === 0) {
+      message.info('所有路线都已有轨迹');
+      return;
+    }
+
+    setLoading(true);
+    const loadingMsg = message.loading(`正在修复 ${broken.length} 条路线...`, 0);
+
+    try {
+      const fixed = await regenerateRoutes(broken, {
+        skipExisting: false,
+        onProgress: (current, total) => {
+          loadingMsg();
+          message.loading(`正在修复 ${current}/${total}...`, 0);
+        }
+      });
+
+      const fixedMap = new Map(fixed.map((r, i) => [broken[i].color + broken[i].name, r]));
+      setRoutes(prev => prev.map(r => {
+        const key = r.color + r.name;
+        return fixedMap.has(key) ? fixedMap.get(key) : r;
+      }));
+
+      loadingMsg();
+      message.success(`已修复 ${fixed.length} 条路线`);
+    } catch (err) {
+      loadingMsg();
+      console.error('修复轨迹失败:', err);
+      message.error('修复失败，请重试');
     } finally {
       setLoading(false);
     }
@@ -986,6 +966,17 @@ function App() {
                 {routes.length > 0 && (
                   <Button size="small" icon={<BarChartOutlined />} onClick={() => setTravelStatsVisible(true)}>
                     {language === 'zh' ? '统计' : 'Stats'}
+                  </Button>
+                )}
+                {routes.some(r => !r.coordinates || r.coordinates.length === 0) && (
+                  <Button
+                    size="small"
+                    icon={<ToolOutlined />}
+                    onClick={handleFixMissingRoutes}
+                    loading={loading}
+                    title="为缺失轨迹的路线重新生成"
+                  >
+                    修复轨迹
                   </Button>
                 )}
                 <Button size="small" icon={<UploadOutlined />} onClick={() => fileInputRef.current?.click()}>
