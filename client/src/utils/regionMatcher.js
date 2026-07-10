@@ -202,11 +202,12 @@ export async function renderRegionOverlay(map, options = {}) {
   const {
     visitedProvinces = new Set(),
     visitedCountryCodes = new Set(),
+    visitedCountryLabels = new Map(),
     highlightColor = '#1890ff',
     baseColor = '#e8e8e8',
     borderColor = '#999999',
     highlightOpacity = 0.55,
-    baseOpacity = 0.25,
+    baseOpacity = 0.4,
     highlightBorderColor = '#096dd9',
   } = options;
 
@@ -214,6 +215,7 @@ export async function renderRegionOverlay(map, options = {}) {
 
   const group = L.featureGroup();
 
+  // 中国省级: 始终渲染 (作为底图)
   const chinaGeo = await loadChinaGeo();
   if (chinaGeo && chinaGeo.features) {
     const chinaLayer = L.geoJSON(chinaGeo, {
@@ -222,21 +224,26 @@ export async function renderRegionOverlay(map, options = {}) {
         const visited = name && visitedProvinces.has(name);
         return {
           color: visited ? highlightBorderColor : borderColor,
-          weight: visited ? 1.5 : 0.8,
+          weight: visited ? 2 : 1,
           fillColor: visited ? highlightColor : baseColor,
           fillOpacity: visited ? highlightOpacity : baseOpacity,
         };
       },
       onEachFeature: (feature, layer) => {
         const name = feature.properties?.name;
-        if (name && visitedProvinces.has(name)) {
-          layer.bindTooltip(name, { sticky: true, direction: 'top' });
+        if (name) {
+          const visited = visitedProvinces.has(name);
+          layer.bindTooltip(
+            visited ? `✓ ${name}` : name,
+            { sticky: true, direction: 'top' }
+          );
         }
       },
     });
     chinaLayer.addTo(group);
   }
 
+  // 世界国家: 仅渲染已访问的
   if (visitedCountryCodes.size > 0) {
     const worldGeo = await loadWorldGeo();
     if (worldGeo && worldGeo.features && worldByIsoCache) {
@@ -248,7 +255,7 @@ export async function renderRegionOverlay(map, options = {}) {
         },
         style: () => ({
           color: highlightBorderColor,
-          weight: 1.2,
+          weight: 1.5,
           fillColor: highlightColor,
           fillOpacity: highlightOpacity * 0.85,
         }),
@@ -257,7 +264,7 @@ export async function renderRegionOverlay(map, options = {}) {
           const code = p.ISO_A2 || p.ISO_A2_EH;
           const label = code ? visitedCountryLabels.get(code) : null;
           const tooltipText = label || p.ADMIN || p.NAME;
-          if (tooltipText) layer.bindTooltip(tooltipText, { sticky: true });
+          if (tooltipText) layer.bindTooltip(`✓ ${tooltipText}`, { sticky: true });
         },
       });
       worldLayer.addTo(group);

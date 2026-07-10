@@ -604,27 +604,41 @@ const Map = forwardRef(({
       if (Array.isArray(routes)) routes.forEach(collect);
       if (currentRoute) collect(currentRoute);
 
-      if (cities.length === 0) return;
+      // 即使没有城市, 也始终渲染底图 (浅灰填充的中国轮廓)
+      let visitedProvinces = new Set();
+      let visitedCountryCodes = new Set();
+      let visitedCountryLabels = new Map();
+
+      if (cities.length > 0) {
+        try {
+          const result = await resolveVisitedRegions(cities);
+          visitedProvinces = result.visitedProvinces;
+          visitedCountryCodes = result.visitedCountryCodes;
+          visitedCountryLabels = result.visitedCountryLabels;
+        } catch (err) {
+          console.error('[Map] 解析访问区域失败:', err);
+        }
+      }
+
+      if (cancelled || !mapInstanceRef.current) return;
+
+      console.log('[Map] 涂色更新:', {
+        cities: cities.length,
+        provinces: Array.from(visitedProvinces),
+        countries: Array.from(visitedCountryCodes),
+      });
 
       try {
-        const { visitedProvinces, visitedCountryCodes } = await resolveVisitedRegions(cities);
-        if (cancelled || !mapInstanceRef.current) return;
-
-        console.log('[Map] 涂色更新:', {
-          cities: cities.length,
-          provinces: Array.from(visitedProvinces),
-          countries: Array.from(visitedCountryCodes),
-        });
-
         const group = await renderRegionOverlay(mapInstanceRef.current, {
           visitedProvinces,
           visitedCountryCodes,
+          visitedCountryLabels,
           highlightColor: isDark ? '#40a9ff' : '#1890ff',
-          baseColor: isDark ? '#2a2a2a' : '#e8e8e8',
-          borderColor: isDark ? '#555555' : '#a0a0a0',
+          baseColor: isDark ? '#3a3a3a' : '#e8e8e8',
+          borderColor: isDark ? '#666666' : '#a8a8a8',
           highlightBorderColor: isDark ? '#69c0ff' : '#096dd9',
-          highlightOpacity: isDark ? 0.45 : 0.55,
-          baseOpacity: isDark ? 0.18 : 0.25,
+          highlightOpacity: isDark ? 0.5 : 0.6,
+          baseOpacity: isDark ? 0.35 : 0.4,
         });
 
         if (cancelled) {
@@ -632,7 +646,7 @@ const Map = forwardRef(({
           return;
         }
         regionLayerRef.current = group;
-        console.log('[Map] 涂色图层渲染完成');
+        console.log('[Map] 涂色图层渲染完成, 已访问:', visitedProvinces.size, '省');
       } catch (err) {
         console.error('[Map] 涂色图层渲染失败:', err);
       }
