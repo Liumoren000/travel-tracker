@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, forwardRef, useImperativeHandle } from 'react';
 import { Button, message, Dropdown, Space } from 'antd';
-import { DownloadOutlined, EnvironmentOutlined, MenuFoldOutlined, MenuUnfoldOutlined, GlobalOutlined } from '@ant-design/icons';
+import { DownloadOutlined, EnvironmentOutlined, MenuFoldOutlined, MenuUnfoldOutlined, GlobalOutlined, ShareAltOutlined } from '@ant-design/icons';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet-polylinedecorator';
@@ -8,6 +8,7 @@ import { calculateRouteDistance, formatDistance, calculateSegmentDistances } fro
 import { getCityDetails } from '../data/cityDetails';
 import { getWeather, formatWeatherHTML } from '../services/weather';
 import { generateAllFlightLinks } from '../utils/flightLinks';
+import ShareModal from './ShareModal';
 
 // 地图样式配置
 const MAP_STYLES = {
@@ -52,6 +53,7 @@ const Map = forwardRef(({
   const tileLayerRef = useRef(null);
   const [exporting, setExporting] = useState(false);
   const [mapStyle, setMapStyle] = useState(isDark ? 'dark' : 'standard');
+  const [shareModalOpen, setShareModalOpen] = useState(false);
 
   // 监听深色模式变化，自动切换地图样式
   useEffect(() => {
@@ -706,6 +708,28 @@ const Map = forwardRef(({
 
   const hasRoutes = routes.length > 0 || currentRoute;
 
+  const getShareableRoute = () => {
+    if (typeof selectedRouteIndex === 'number' && routes[selectedRouteIndex]) {
+      return routes[selectedRouteIndex];
+    }
+    if (currentRoute && Array.isArray(currentRoute.cities) && currentRoute.cities.length >= 2) {
+      return currentRoute;
+    }
+    if (routes.length > 0) {
+      return routes[routes.length - 1];
+    }
+    return null;
+  };
+
+  const handleShareClick = () => {
+    const r = getShareableRoute();
+    if (!r) {
+      message.warning('暂无可分享的路线');
+      return;
+    }
+    setShareModalOpen(true);
+  };
+
   // 地图样式切换菜单
   const mapStyleMenuItems = Object.entries(MAP_STYLES).map(([key, style]) => ({
     key: key,
@@ -783,17 +807,32 @@ const Map = forwardRef(({
         gap: '8px'
       }}>
         {hasRoutes && (
-          <Button
-            type="primary"
-            icon={<DownloadOutlined />}
-            loading={exporting}
-            onClick={handleExport}
-            style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}
-          >
-            {exporting ? '导出中...' : '导出图片'}
-          </Button>
+          <>
+            <Button
+              type="primary"
+              icon={<DownloadOutlined />}
+              loading={exporting}
+              onClick={handleExport}
+              style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}
+            >
+              {exporting ? '导出中...' : '导出图片'}
+            </Button>
+            <Button
+              icon={<ShareAltOutlined />}
+              onClick={handleShareClick}
+              style={{ boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}
+            >
+              分享路线
+            </Button>
+          </>
         )}
       </div>
+
+      <ShareModal
+        open={shareModalOpen}
+        route={getShareableRoute()}
+        onClose={() => setShareModalOpen(false)}
+      />
 
       {addMode && (
         <div style={{

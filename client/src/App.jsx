@@ -14,6 +14,7 @@ import { useTheme } from './hooks/useTheme.jsx';
 import { useLanguage } from './hooks/useLanguage.jsx';
 import { downloadGPX, importGPXFile } from './utils/gpx';
 import { generateAllFlightLinks } from './utils/flightLinks';
+import { parseShareHash, clearShareHash } from './utils/routeShare';
 import { CITIES_DATABASE } from './data/citiesDatabase';
 import './App.css';
 
@@ -172,6 +173,44 @@ function App() {
   useEffect(() => {
     saveRoutesToStorage(routes);
   }, [routes]);
+
+  // 从 URL hash 加载分享的路线
+  useEffect(() => {
+    const sharedRoute = parseShareHash();
+    if (!sharedRoute) return;
+
+    const cityCount = sharedRoute.cities?.length || 0;
+    Modal.confirm({
+      title: '收到一条分享的路线',
+      content: (
+        <div>
+          <div style={{ marginBottom: 8 }}>
+            <strong>{sharedRoute.name || '未命名路线'}</strong>
+          </div>
+          <div style={{ color: '#666', fontSize: 13 }}>
+            {cityCount} 个城市: {sharedRoute.cities?.map(c => c.name).join(' → ')}
+          </div>
+          <div style={{ marginTop: 12, color: '#1890ff' }}>
+            是否加载到当前编辑列表?
+          </div>
+        </div>
+      ),
+      okText: '加载',
+      cancelText: '忽略',
+      onOk: () => {
+        setCities(sharedRoute.cities);
+        setCurrentRoute({
+          ...sharedRoute,
+          coordinates: []
+        });
+        message.success('已加载分享的路线');
+        clearShareHash();
+      },
+      onCancel: () => {
+        clearShareHash();
+      }
+    });
+  }, []);
 
   const handleAddCity = (city) => {
     const newCity = { ...city, mode: city.mode || 'driving' };
