@@ -213,66 +213,81 @@ export async function renderRegionOverlay(map, options = {}) {
 
   if (!map) return null;
 
-  const group = L.featureGroup();
+  const layers = [];
 
   // 中国省级: 始终渲染 (作为底图)
   const chinaGeo = await loadChinaGeo();
-  if (chinaGeo && chinaGeo.features) {
-    const chinaLayer = L.geoJSON(chinaGeo, {
-      style: (feature) => {
-        const name = feature.properties?.name;
-        const visited = name && visitedProvinces.has(name);
-        return {
-          color: visited ? highlightBorderColor : borderColor,
-          weight: visited ? 2 : 1,
-          fillColor: visited ? highlightColor : baseColor,
-          fillOpacity: visited ? highlightOpacity : baseOpacity,
-        };
-      },
-      onEachFeature: (feature, layer) => {
-        const name = feature.properties?.name;
-        if (name) {
-          const visited = visitedProvinces.has(name);
-          layer.bindTooltip(
-            visited ? `✓ ${name}` : name,
-            { sticky: true, direction: 'top' }
-          );
-        }
-      },
-    });
-    chinaLayer.addTo(group);
+  if (chinaGeo && chinaGeo.features && Array.isArray(chinaGeo.features)) {
+    try {
+      const chinaLayer = L.geoJSON(chinaGeo, {
+        style: (feature) => {
+          const name = feature.properties?.name;
+          const visited = name && visitedProvinces.has(name);
+          return {
+            color: visited ? highlightBorderColor : borderColor,
+            weight: visited ? 2 : 1,
+            fillColor: visited ? highlightColor : baseColor,
+            fillOpacity: visited ? highlightOpacity : baseOpacity,
+          };
+        },
+        onEachFeature: (feature, layer) => {
+          const name = feature.properties?.name;
+          if (name) {
+            const visited = visitedProvinces.has(name);
+            layer.bindTooltip(
+              visited ? `✓ ${name}` : name,
+              { sticky: true, direction: 'top' }
+            );
+          }
+        },
+      });
+      chinaLayer.addTo(map);
+      layers.push(chinaLayer);
+    } catch (err) {
+      console.error('[regionMatcher] 中国图层渲染失败:', err);
+    }
   }
 
   // 世界国家: 仅渲染已访问的
   if (visitedCountryCodes.size > 0) {
     const worldGeo = await loadWorldGeo();
     if (worldGeo && worldGeo.features && worldByIsoCache) {
-      const worldLayer = L.geoJSON(worldGeo, {
-        filter: (feature) => {
-          const p = feature.properties || {};
-          const codes = [p.ISO_A2, p.ISO_A2_EH, p.ADM0_A3, p.SOV_A3];
-          return codes.some(c => c && visitedCountryCodes.has(c));
-        },
-        style: () => ({
-          color: highlightBorderColor,
-          weight: 1.5,
-          fillColor: highlightColor,
-          fillOpacity: highlightOpacity * 0.85,
-        }),
-        onEachFeature: (feature, layer) => {
-          const p = feature.properties || {};
-          const code = p.ISO_A2 || p.ISO_A2_EH;
-          const label = code ? visitedCountryLabels.get(code) : null;
-          const tooltipText = label || p.ADMIN || p.NAME;
-          if (tooltipText) layer.bindTooltip(`✓ ${tooltipText}`, { sticky: true });
-        },
-      });
-      worldLayer.addTo(group);
+      try {
+        const worldLayer = L.geoJSON(worldGeo, {
+          filter: (feature) => {
+            const p = feature.properties || {};
+            const codes = [p.ISO_A2, p.ISO_A2_EH, p.ADM0_A3, p.SOV_A3];
+            return codes.some(c => c && visitedCountryCodes.has(c));
+          },
+          style: () => ({
+            color: highlightBorderColor,
+            weight: 1.5,
+            fillColor: highlightColor,
+            fillOpacity: highlightOpacity * 0.85,
+          }),
+          onEachFeature: (feature, layer) => {
+            const p = feature.properties || {};
+            const code = p.ISO_A2 || p.ISO_A2_EH;
+            const label = code ? visitedCountryLabels.get(code) : null;
+            const tooltipText = label || p.ADMIN || p.NAME;
+            if (tooltipText) layer.bindTooltip(`✓ ${tooltipText}`, { sticky: true });
+          },
+        });
+        worldLayer.addTo(map);
+        layers.push(worldLayer);
+      } catch (err) {
+        console.error('[regionMatcher] 世界图层渲染失败:', err);
+      }
     }
   }
 
-  group.addTo(map);
-  return group;
+  return {
+    remove() {
+      layers.forEach(l => {
+        try { l.remove(); } catch (e) { /* ignore */ }
+      });
+    },
+  };
 }
 
 // 预加载, 避免用户首次点击时延迟
