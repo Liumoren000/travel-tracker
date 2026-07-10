@@ -15,6 +15,43 @@ function buildStraightLine(from, to) {
   return segCoords;
 }
 
+// 仅生成直线轨迹 (不调用 OSRM, 快速可靠)
+export async function generateStraightPath(cities, defaultMode = 'driving') {
+  if (!Array.isArray(cities) || cities.length < 2) {
+    return { coordinates: [], segments: [], osrmCount: 0, straightCount: 0 };
+  }
+
+  const valid = cities.filter(c => c && typeof c.lat === 'number' && typeof c.lng === 'number');
+  if (valid.length < 2) {
+    return { coordinates: [], segments: [], osrmCount: 0, straightCount: 0 };
+  }
+
+  let allCoords = [];
+  const segments = [];
+
+  for (let i = 0; i < valid.length - 1; i++) {
+    const from = valid[i];
+    const to = valid[i + 1];
+    const mode = to.mode || from.mode || defaultMode;
+    const segCoords = buildStraightLine(from, to);
+
+    if (i === 0) {
+      allCoords = [...segCoords];
+    } else {
+      allCoords = [...allCoords, ...segCoords.slice(1)];
+    }
+
+    segments.push({
+      from: from.name,
+      to: to.name,
+      mode,
+      coordinates: segCoords
+    });
+  }
+
+  return { coordinates: allCoords, segments, osrmCount: 0, straightCount: valid.length - 1 };
+}
+
 async function fetchOSRMSegment(from, to, mode) {
   const profile = mode === 'walking' ? 'foot' : 'driving';
   const coordinates = `${from.lng},${from.lat};${to.lng},${to.lat}`;

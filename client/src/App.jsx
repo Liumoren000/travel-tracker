@@ -15,7 +15,7 @@ import { useLanguage } from './hooks/useLanguage.jsx';
 import { downloadGPX, importGPXFile } from './utils/gpx';
 import { generateAllFlightLinks } from './utils/flightLinks';
 import { parseShareHash, clearShareHash, enrichImportedRoutes } from './utils/routeShare';
-import { regenerateRoutes, generateRoutePath } from './utils/routeGenerator';
+import { regenerateRoutes, generateRoutePath, generateStraightPath } from './utils/routeGenerator';
 import { CITIES_DATABASE } from './data/citiesDatabase';
 import './App.css';
 
@@ -358,38 +358,57 @@ function App() {
     }
   };
 
-  // 修复缺失轨迹的路线
-  const handleFixMissingRoutes = async () => {
-    const broken = routes.filter(r => !r.coordinates || r.coordinates.length === 0);
-    if (broken.length === 0) {
-      message.info('所有路线都已有轨迹');
+  // 修复缺失轨迹的路线 (使用直线方案, 快速可靠)
+  const handleFixMissingRoutes = async (useOSRM = false) => {
+    console.log('[App] handleFixMissingRoutes, routes count:', routes.length);
+    routes.forEach((r, i) => {
+      console.log(`  [${i}] ${r.name}: cities=${r.cities?.length}, coords=${r.coordinates?.length}, segments=${r.segments?.length}`);
+    });
+
+    const brokenIndices = [];
+    routes.forEach((r, i) => {
+      if (!r.coordinates || r.coordinates.length === 0) {
+        brokenIndices.push(i);
+      }
+    });
+
+    if (brokenIndices.length === 0) {
+      message.info(`所有 ${routes.length} 条路线都已有轨迹`);
       return;
     }
 
     setLoading(true);
-    const loadingMsg = message.loading(`正在修复 ${broken.length} 条路线...`, 0);
+    const hideLoading = message.loading(`正在修复 ${brokenIndices.length} 条路线...`, 0);
 
     try {
-      const fixed = await regenerateRoutes(broken, {
-        skipExisting: false,
-        onProgress: (current, total) => {
-          loadingMsg();
-          message.loading(`正在修复 ${current}/${total}...`, 0);
-        }
-      });
+      const newRoutes = [...routes];
 
-      const fixedMap = new Map(fixed.map((r, i) => [broken[i].color + broken[i].name, r]));
-      setRoutes(prev => prev.map(r => {
-        const key = r.color + r.name;
-        return fixedMap.has(key) ? fixedMap.get(key) : r;
-      }));
+      for (let n = 0; n < brokenIndices.length; n++) {
+        const idx = brokenIndices[n];
+        const route = newRoutes[idx];
+        if (!route || !Array.isArray(route.cities) || route.cities.length < 2) continue;
 
-      loadingMsg();
-      message.success(`已修复 ${fixed.length} 条路线`);
+        const path = useOSRM
+          ? await generateRoutePath(route.cities, route.mode || 'driving')
+          : await generateStraightPath(route.cities, route.mode || 'driving');
+
+        newRoutes[idx] = {
+          ...route,
+          coordinates: path.coordinates,
+          segments: path.segments
+        };
+
+        hideLoading();
+        message.loading(`已修复 ${n + 1}/${brokenIndices.length} 条`, 0);
+      }
+
+      hideLoading();
+      setRoutes(newRoutes);
+      message.success(`已修复 ${brokenIndices.length} 条路线${useOSRM ? ' (含真实道路)' : ' (使用直线)'}`);
     } catch (err) {
-      loadingMsg();
-      console.error('修复轨迹失败:', err);
-      message.error('修复失败，请重试');
+      hideLoading();
+      console.error('[App] 修复轨迹失败:', err);
+      message.error('修复失败: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -968,17 +987,24 @@ function App() {
                     {language === 'zh' ? '统计' : 'Stats'}
                   </Button>
                 )}
-                {routes.some(r => !r.coordinates || r.coordinates.length === 0) && (
-                  <Button
-                    size="small"
-                    icon={<ToolOutlined />}
-                    onClick={handleFixMissingRoutes}
-                    loading={loading}
-                    title="为缺失轨迹的路线重新生成"
-                  >
-                    修复轨迹
-                  </Button>
-                )}
+                <Button
+                  size="small"
+                  icon={<ToolOutlined />}
+                  onClick={() => {
+                    Modal.confirm({
+                      title: '修复缺失轨迹',
+                      content: '选择修复方式：直线方案即时完成；道路方案需要联网调用 OSRM，可能较慢。',
+                      okText: '直线方案 (推荐)',
+                      cancelText: '使用道路方案',
+                      onOk: () => handleFixMissingRoutes(false),
+                      onCancel: () => handleFixMissingRoutes(true)
+                    });
+                  }}
+                  loading={loading}
+                  title="为缺失轨迹的路线重新生成"
+                >
+                  修复轨迹
+                </Button>
                 <Button size="small" icon={<UploadOutlined />} onClick={() => fileInputRef.current?.click()}>
                   {t('import')}
                 </Button>
