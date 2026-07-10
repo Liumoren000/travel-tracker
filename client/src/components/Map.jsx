@@ -866,7 +866,10 @@ const Map = forwardRef(({
         </Dropdown>
         <Button
           icon={<BgColorsOutlined />}
-          onClick={() => setShowRegion(v => !v)}
+          onClick={() => {
+            console.log('[Map] 切换涂色状态, 当前:', showRegion);
+            setShowRegion(v => !v);
+          }}
           type={showRegion ? 'primary' : 'default'}
           style={{
             background: showRegion ? '#1890ff' : 'rgba(255, 255, 255, 0.95)',
@@ -881,6 +884,23 @@ const Map = forwardRef(({
           }}
           title={showRegion ? '隐藏行政区涂色' : '显示行政区涂色'}
         />
+      </div>
+
+      {/* 涂色状态指示器 */}
+      <div style={{
+        position: 'absolute',
+        top: '60px',
+        right: '10px',
+        zIndex: 1000,
+        background: showRegion ? 'rgba(24, 144, 255, 0.9)' : 'rgba(0,0,0,0.6)',
+        color: 'white',
+        padding: '4px 12px',
+        borderRadius: '12px',
+        fontSize: '12px',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.2)',
+        pointerEvents: 'none'
+      }}>
+        涂色: {showRegion ? '开' : '关'}
       </div>
 
       {/* 右上角：导出按钮 */}
