@@ -236,27 +236,7 @@ const Map = forwardRef(({
       return ap.x - bp.x;
     });
 
-    // 同名城市（同一城市被多条路线访问）只显示一个标签
-    const seenNames = new Set();
-    const dedupedItems = sortedItems.filter((data) => {
-      const name = (data.city && data.city.name) || '';
-      if (!name || seenNames.has(name)) return false;
-      seenNames.add(name);
-      return true;
-    });
-
-    // 清理被去重掉的标签的引线
     sortedItems.forEach((data) => {
-      if (dedupedItems.includes(data)) return;
-      if (data.label) data.label.setLatLng(data.geoPos);
-      if (data.leaderLine) {
-        data.leaderLine.remove();
-        layersRef.current = layersRef.current.filter((l) => l !== data.leaderLine);
-        data.leaderLine = null;
-      }
-    });
-
-    dedupedItems.forEach((data) => {
       const wrapper = data.label && data.label.getElement();
       if (!wrapper) return;
       const inner = wrapper.firstElementChild;
@@ -335,6 +315,9 @@ const Map = forwardRef(({
     layersRef.current = [];
     markersDataRef.current = [];
 
+    // 跨路线同名城市去重：每个城市名只创建一个标签
+    const seenLabelNames = new Set();
+
     const allBounds = [];
 
     if (Array.isArray(routes)) {
@@ -386,21 +369,25 @@ const Map = forwardRef(({
             fillOpacity: isOtherSelected ? 0.4 : 1
           }).addTo(mapInstanceRef.current).bindPopup(popupContent);
 
-          const label = L.marker([city.lat, city.lng], { icon, zIndexOffset: isSelected ? 500 : 0 })
-            .addTo(mapInstanceRef.current);
-
           layersRef.current.push(dot);
-          layersRef.current.push(label);
-          markersDataRef.current.push({
-            label,
-            dot,
-            city,
-            geoPos: [city.lat, city.lng],
-            bgColor: color,
-            borderColor,
-            isOtherSelected,
-            isCurrent: false
-          });
+
+          const isFirstLabel = city.name && !seenLabelNames.has(city.name);
+          if (isFirstLabel) {
+            const label = L.marker([city.lat, city.lng], { icon, zIndexOffset: isSelected ? 500 : 0 })
+              .addTo(mapInstanceRef.current);
+            layersRef.current.push(label);
+            markersDataRef.current.push({
+              label,
+              dot,
+              city,
+              geoPos: [city.lat, city.lng],
+              bgColor: color,
+              borderColor,
+              isOtherSelected,
+              isCurrent: false
+            });
+            seenLabelNames.add(city.name);
+          }
           allBounds.push([city.lat, city.lng]);
         });
 
@@ -646,21 +633,23 @@ const Map = forwardRef(({
           }, 10);
         });
 
-        const label = L.marker([city.lat, city.lng], { icon, zIndexOffset: 1000 })
-          .addTo(mapInstanceRef.current);
-
-        layersRef.current.push(dot);
-        layersRef.current.push(label);
-        markersDataRef.current.push({
-          label,
-          dot,
-          city,
-          geoPos: [city.lat, city.lng],
-          bgColor: '#1890ff',
-          borderColor,
-          isOtherSelected: false,
-          isCurrent: true
-        });
+        const isFirstLabel = city.name && !seenLabelNames.has(city.name);
+        if (isFirstLabel) {
+          const label = L.marker([city.lat, city.lng], { icon, zIndexOffset: 1000 })
+            .addTo(mapInstanceRef.current);
+          layersRef.current.push(label);
+          markersDataRef.current.push({
+            label,
+            dot,
+            city,
+            geoPos: [city.lat, city.lng],
+            bgColor: '#1890ff',
+            borderColor,
+            isOtherSelected: false,
+            isCurrent: true
+          });
+          seenLabelNames.add(city.name);
+        }
         allBounds.push([city.lat, city.lng]);
       });
 
