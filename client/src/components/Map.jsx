@@ -112,6 +112,10 @@ const Map = forwardRef(({
       requestAnimationFrame(() => resolveLabelOverlaps());
     });
 
+    mapInstanceRef.current.on('moveend', () => {
+      requestAnimationFrame(() => resolveLabelOverlaps());
+    });
+
     // 监听容器大小变化，更新地图
     const resizeObserver = new ResizeObserver(() => {
       if (mapInstanceRef.current) {
@@ -128,6 +132,7 @@ const Map = forwardRef(({
       resizeObserver.disconnect();
       if (mapInstanceRef.current) {
         mapInstanceRef.current.off('zoomend');
+        mapInstanceRef.current.off('moveend');
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
       }
@@ -232,11 +237,12 @@ const Map = forwardRef(({
     });
 
     sortedItems.forEach((data) => {
-      const el = data.label && data.label.getElement();
-      if (!el) return;
-      const rect = el.getBoundingClientRect();
-      const w = rect.width;
-      const h = rect.height;
+      const wrapper = data.label && data.label.getElement();
+      if (!wrapper) return;
+      const inner = wrapper.firstElementChild;
+      const innerRect = inner ? inner.getBoundingClientRect() : null;
+      const w = (innerRect && innerRect.width > 0) ? innerRect.width : 70;
+      const h = (innerRect && innerRect.height > 0) ? innerRect.height : 24;
       const dotPixel = map.latLngToContainerPoint(data.geoPos);
       const dotX = dotPixel.x;
       const dotY = dotPixel.y;
@@ -271,11 +277,11 @@ const Map = forwardRef(({
       const newLatLng = map.containerPointToLatLng([finalX, finalY]);
       data.label.setLatLng(newLatLng);
 
-      // 引线：当标签中心离圆点 > 22 像素时画一条虚线连回圆点
+      // 引线：当标签中心离圆点 > 18 像素时画一条虚线连回圆点
       const labelCenterX = finalX + w / 2;
       const labelCenterY = finalY + h / 2;
       const dist = Math.hypot(labelCenterX - dotX, labelCenterY - dotY);
-      if (dist > 22) {
+      if (dist > 18) {
         const nearestX = Math.max(finalX, Math.min(dotX, finalX + w));
         const nearestY = Math.max(finalY, Math.min(dotY, finalY + h));
         const nearestLatLng = map.containerPointToLatLng([nearestX, nearestY]);
