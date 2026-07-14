@@ -13,9 +13,9 @@ import ShareModal from './ShareModal';
 // 标签碰撞检测的最小间距（像素）
 const LABEL_GAP = 4;
 
-const buildMarkerIcon = (city, bgColor, borderColor, isOtherSelected, isCurrent) => {
+const buildMarkerIcon = (city, bgColor, isOtherSelected, isCurrent) => {
   const innerClass = `marker-label${isCurrent ? ' marker-current' : ''}`;
-  const labelHTML = `<div class="${innerClass}" style="background:${bgColor};border-color:${borderColor};opacity:${isOtherSelected ? 0.4 : 1}">${city.name || '未知'}</div>`;
+  const labelHTML = `<div class="${innerClass}" style="background:${bgColor};opacity:${isOtherSelected ? 0.4 : 1}">${city.name || '未知'}</div>`;
 
   return L.divIcon({
     className: 'custom-marker',
@@ -236,7 +236,27 @@ const Map = forwardRef(({
       return ap.x - bp.x;
     });
 
+    // 同名城市（同一城市被多条路线访问）只显示一个标签
+    const seenNames = new Set();
+    const dedupedItems = sortedItems.filter((data) => {
+      const name = (data.city && data.city.name) || '';
+      if (!name || seenNames.has(name)) return false;
+      seenNames.add(name);
+      return true;
+    });
+
+    // 清理被去重掉的标签的引线
     sortedItems.forEach((data) => {
+      if (dedupedItems.includes(data)) return;
+      if (data.label) data.label.setLatLng(data.geoPos);
+      if (data.leaderLine) {
+        data.leaderLine.remove();
+        layersRef.current = layersRef.current.filter((l) => l !== data.leaderLine);
+        data.leaderLine = null;
+      }
+    });
+
+    dedupedItems.forEach((data) => {
       const wrapper = data.label && data.label.getElement();
       if (!wrapper) return;
       const inner = wrapper.firstElementChild;
@@ -335,7 +355,7 @@ const Map = forwardRef(({
           if (isFirst) borderColor = '#52c41a';
           if (isLast) borderColor = '#f5222d';
 
-          const icon = buildMarkerIcon(city, color, borderColor, isOtherSelected, false);
+          const icon = buildMarkerIcon(city, color, isOtherSelected, false);
 
           const citiesList = route.cities.map((c, i) => 
             `<div style="padding:3px 0;font-size:12px;${i === index ? 'font-weight:bold;color:' + color : ''}">
@@ -582,7 +602,7 @@ const Map = forwardRef(({
         if (isFirst) borderColor = '#52c41a';
         if (isLast) borderColor = '#f5222d';
 
-        const icon = buildMarkerIcon(city, '#1890ff', borderColor, false, true);
+        const icon = buildMarkerIcon(city, '#1890ff', false, true);
 
         const citiesList = currentRoute.cities.map((c, i) => 
           `<div style="padding:3px 0;font-size:12px;${i === index ? 'font-weight:bold;color:#1890ff' : ''}">
