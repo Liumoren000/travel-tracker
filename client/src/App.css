@@ -173,6 +173,14 @@ body {
   min-width: 30px;
 }
 
+.marker-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.8);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.4);
+}
+
 .marker-label.marker-current {
   background: #1890ff;
   border: 3px solid #fff;

@@ -10,6 +10,26 @@ import { getWeather, formatWeatherHTML } from '../services/weather';
 import { generateAllFlightLinks } from '../utils/flightLinks';
 import ShareModal from './ShareModal';
 
+// 城市名标签可见的最小缩放级别（小于此级别只显示圆点，避免重叠）
+const LABEL_MIN_ZOOM = 6;
+
+const buildMarkerIcon = (city, bgColor, borderColor, showLabel, isOtherSelected, isCurrent) => {
+  const innerClass = showLabel
+    ? `marker-label${isCurrent ? ' marker-current' : ''}`
+    : `marker-dot${isCurrent ? ' marker-current' : ''}`;
+  const innerHTML = showLabel
+    ? `${city.name || '未知'}`
+    : '';
+  const labelHTML = `<div class="${innerClass}" style="background:${bgColor};border-color:${borderColor};opacity:${isOtherSelected ? 0.4 : 1}">${innerHTML}</div>`;
+
+  return L.divIcon({
+    className: 'custom-marker',
+    html: labelHTML,
+    iconSize: showLabel ? [60, 24] : [10, 10],
+    iconAnchor: showLabel ? [30, 12] : [5, 5]
+  });
+};
+
 // 地图样式配置
 const MAP_STYLES = {
   standard: {
@@ -49,6 +69,7 @@ const Map = forwardRef(({
   const mapRef = useRef(null);
   const mapInstanceRef = useRef(null);
   const layersRef = useRef([]);
+  const markersDataRef = useRef([]);
   const clickHandlerRef = useRef(null);
   const tileLayerRef = useRef(null);
   const [exporting, setExporting] = useState(false);
@@ -92,6 +113,10 @@ const Map = forwardRef(({
       attribution: MAP_STYLES.standard.attribution
     }).addTo(mapInstanceRef.current);
 
+    mapInstanceRef.current.on('zoomend', () => {
+      updateMarkerIcons();
+    });
+
     // 监听容器大小变化，更新地图
     const resizeObserver = new ResizeObserver(() => {
       if (mapInstanceRef.current) {
@@ -107,6 +132,7 @@ const Map = forwardRef(({
     return () => {
       resizeObserver.disconnect();
       if (mapInstanceRef.current) {
+        mapInstanceRef.current.off('zoomend');
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
       }
@@ -150,6 +176,24 @@ const Map = forwardRef(({
     };
   }, [onCityClick]);
 
+  // 根据当前缩放级别更新所有城市标签的显示状态
+  const updateMarkerIcons = () => {
+    if (!mapInstanceRef.current) return;
+    const currentZoom = mapInstanceRef.current.getZoom();
+    const showLabel = currentZoom >= LABEL_MIN_ZOOM;
+    markersDataRef.current.forEach((data) => {
+      const icon = buildMarkerIcon(
+        data.city,
+        data.bgColor,
+        data.borderColor,
+        showLabel,
+        data.isOtherSelected,
+        data.isCurrent
+      );
+      data.marker.setIcon(icon);
+    });
+  };
+
   useEffect(() => {
     if (!mapInstanceRef.current) return;
 
@@ -157,6 +201,7 @@ const Map = forwardRef(({
       try { layer.remove(); } catch (e) { /* ignore */ }
     });
     layersRef.current = [];
+    markersDataRef.current = [];
 
     const allBounds = [];
 
@@ -178,12 +223,9 @@ const Map = forwardRef(({
           if (isFirst) borderColor = '#52c41a';
           if (isLast) borderColor = '#f5222d';
 
-          const icon = L.divIcon({
-            className: 'custom-marker',
-            html: `<div class="marker-label" style="background:${color};border-color:${borderColor};opacity:${isOtherSelected ? 0.4 : 1}">${city.name || '未知'}</div>`,
-            iconSize: [60, 24],
-            iconAnchor: [30, 12]
-          });
+          const currentZoom = mapInstanceRef.current.getZoom();
+          const showLabel = currentZoom >= LABEL_MIN_ZOOM;
+          const icon = buildMarkerIcon(city, color, borderColor, showLabel, isOtherSelected, false);
 
           const citiesList = route.cities.map((c, i) => 
             `<div style="padding:3px 0;font-size:12px;${i === index ? 'font-weight:bold;color:' + color : ''}">
@@ -210,6 +252,14 @@ const Map = forwardRef(({
             .bindPopup(popupContent);
 
           layersRef.current.push(marker);
+          markersDataRef.current.push({
+            marker,
+            city,
+            bgColor: color,
+            borderColor,
+            isOtherSelected,
+            isCurrent: false
+          });
           allBounds.push([city.lat, city.lng]);
         });
 
@@ -411,12 +461,9 @@ const Map = forwardRef(({
         if (isFirst) borderColor = '#52c41a';
         if (isLast) borderColor = '#f5222d';
 
-        const icon = L.divIcon({
-          className: 'custom-marker',
-          html: `<div class="marker-label marker-current" style="border-color:${borderColor}">${city.name || '未知'}</div>`,
-          iconSize: [60, 24],
-          iconAnchor: [30, 12]
-        });
+        const currentZoom = mapInstanceRef.current.getZoom();
+        const showLabel = currentZoom >= LABEL_MIN_ZOOM;
+        const icon = buildMarkerIcon(city, '#1890ff', borderColor, showLabel, false, true);
 
         const citiesList = currentRoute.cities.map((c, i) => 
           `<div style="padding:3px 0;font-size:12px;${i === index ? 'font-weight:bold;color:#1890ff' : ''}">
@@ -456,6 +503,14 @@ const Map = forwardRef(({
         });
 
         layersRef.current.push(marker);
+        markersDataRef.current.push({
+          marker,
+          city,
+          bgColor: '#1890ff',
+          borderColor,
+          isOtherSelected: false,
+          isCurrent: true
+        });
         allBounds.push([city.lat, city.lng]);
       });
 
@@ -569,6 +624,8 @@ const Map = forwardRef(({
       const bounds = L.latLngBounds(allBounds);
       mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50] });
     }
+
+    updateMarkerIcons();
   }, [routes, currentRoute, selectedRouteIndex, onDeleteCity]);
 
   const handleExport = async () => {
