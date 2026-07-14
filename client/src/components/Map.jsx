@@ -171,8 +171,47 @@ const Map = forwardRef(({
     };
   }, [onCityClick]);
 
-  // 测量所有标签的尺寸并按"先尝试8个方向、避让其他标签"的方式重新定位，
-  // 避免标签相互重叠，同时保证每个标签尽量靠近其城市点
+  // 给定标签尺寸，生成围绕其城市点的多个候选放置位置（角度 + 距离）
+  // 按"靠右 → 其他方向 → 更远距离"的顺序尝试
+  const buildAnchorOffsets = (dotX, dotY, w, h, mapW, mapH) => {
+    const DOT_R = 5;
+    const PAD = 2;
+    const baseDistance = DOT_R + LABEL_GAP;
+    const list = [];
+
+    for (let ring = 0; ring < 3; ring++) {
+      const dist = baseDistance + ring * 4;
+      const positions = [
+        { ax: 1, ay: 0, side: 'r' },
+        { ax: 0, ay: 1, side: 'b' },
+        { ax: -1, ay: 0, side: 'l' },
+        { ax: 0, ay: -1, side: 't' },
+        { ax: 1, ay: 1, side: 'br' },
+        { ax: -1, ay: 1, side: 'bl' },
+        { ax: 1, ay: -1, side: 'tr' },
+        { ax: -1, ay: -1, side: 'tl' }
+      ];
+      positions.forEach(({ ax, ay, side }) => {
+        let x, y;
+        if (side === 'r') { x = dotX + dist; y = dotY - h / 2; }
+        else if (side === 'l') { x = dotX - dist - w; y = dotY - h / 2; }
+        else if (side === 'b') { x = dotX - w / 2; y = dotY + dist; }
+        else if (side === 't') { x = dotX - w / 2; y = dotY - dist - h; }
+        else if (side === 'br') { x = dotX + dist; y = dotY + dist; }
+        else if (side === 'bl') { x = dotX - dist - w; y = dotY + dist; }
+        else if (side === 'tr') { x = dotX + dist; y = dotY - dist - h; }
+        else if (side === 'tl') { x = dotX - dist - w; y = dotY - dist - h; }
+        const cx = x + w / 2;
+        const cy = y + h / 2;
+        if (cx < PAD || cy < PAD || cx > mapW - PAD || cy > mapH - PAD) return;
+        list.push({ x, y, dist: Math.hypot(cx - dotX, cy - dotY), ax, ay });
+      });
+    }
+    return list;
+  };
+
+  // 测量所有标签的尺寸并按"先尝试多个候选位置、避让其他标签"的方式重新定位，
+  // 避免标签相互重叠且不出地图边界，同时保证每个标签尽量靠近其城市点
   const resolveLabelOverlaps = () => {
     const map = mapInstanceRef.current;
     if (!map) return;
@@ -186,10 +225,19 @@ const Map = forwardRef(({
       return;
     }
 
-    const DOT_R = 5;
+    const mapSize = map.getSize();
+    const mapW = mapSize.x;
+    const mapH = mapSize.y;
     const placed = [];
 
-    items.forEach((data) => {
+    const sortedItems = [...items].sort((a, b) => {
+      const ap = map.latLngToContainerPoint(a.geoPos);
+      const bp = map.latLngToContainerPoint(b.geoPos);
+      if (ap.y !== bp.y) return ap.y - bp.y;
+      return ap.x - bp.x;
+    });
+
+    sortedItems.forEach((data) => {
       const el = data.label && data.label.getElement();
       if (!el) return;
       const rect = el.getBoundingClientRect();
@@ -199,49 +247,43 @@ const Map = forwardRef(({
       const dotX = dotPixel.x;
       const dotY = dotPixel.y;
 
-      const offsets = [
-        { x: dotX + DOT_R + LABEL_GAP, y: dotY - h / 2 },
-        { x: dotX - DOT_R - LABEL_GAP - w, y: dotY - h / 2 },
-        { x: dotX - w / 2, y: dotY + DOT_R + LABEL_GAP },
-        { x: dotX - w / 2, y: dotY - DOT_R - LABEL_GAP - h },
-        { x: dotX + DOT_R + LABEL_GAP, y: dotY + DOT_R + LABEL_GAP },
-        { x: dotX - DOT_R - LABEL_GAP - w, y: dotY + DOT_R + LABEL_GAP },
-        { x: dotX + DOT_R + LABEL_GAP, y: dotY - DOT_R - LABEL_GAP - h },
-        { x: dotX - DOT_R - LABEL_GAP - w, y: dotY - DOT_R - LABEL_GAP - h }
-      ];
+      const anchors = buildAnchorOffsets(dotX, dotY, w, h, mapW, mapH);
 
-      let chosen = null;
-      for (const off of offsets) {
-        const collides = placed.some((p) =>
-          off.x < p.x + p.w + LABEL_GAP &&
-          off.x + w + LABEL_GAP > p.x &&
-          off.y < p.y + p.h + LABEL_GAP &&
-          off.y + h + LABEL_GAP > p.y
-        );
-        if (!collides) {
-          chosen = off;
-          break;
-        }
-      }
+      const collides = (off) => placed.some((p) =>
+        off.x < p.x + p.w + LABEL_GAP &&
+        off.x + w + LABEL_GAP > p.x &&
+        off.y < p.y + p.h + LABEL_GAP &&
+        off.y + h + LABEL_GAP > p.y
+      );
+
+      let chosen = anchors.find((off) => !collides(off));
 
       if (!chosen) {
-        let minOverlap = Infinity;
-        for (const off of offsets) {
+        let minScore = Infinity;
+        for (const off of anchors) {
           let overlap = 0;
           for (const p of placed) {
             const ox = Math.max(0, Math.min(off.x + w, p.x + p.w) - Math.max(off.x, p.x));
             const oy = Math.max(0, Math.min(off.y + h, p.y + p.h) - Math.max(off.y, p.y));
             overlap += ox * oy;
           }
-          if (overlap < minOverlap) {
-            minOverlap = overlap;
+          const score = overlap * 100 + off.dist;
+          if (score < minScore) {
+            minScore = score;
             chosen = off;
           }
         }
       }
 
-      placed.push({ x: chosen.x, y: chosen.y, w, h });
-      const newLatLng = map.containerPointToLatLng([chosen.x, chosen.y]);
+      if (!chosen) {
+        chosen = { x: dotX - w / 2, y: dotY - h / 2, dist: 0 };
+      }
+
+      const finalX = Math.max(0, Math.min(chosen.x, mapW - w));
+      const finalY = Math.max(0, Math.min(chosen.y, mapH - h));
+
+      placed.push({ x: finalX, y: finalY, w, h });
+      const newLatLng = map.containerPointToLatLng([finalX, finalY]);
       data.label.setLatLng(newLatLng);
     });
   };
