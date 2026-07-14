@@ -306,7 +306,7 @@ const Map = forwardRef(({
             fillOpacity: isOtherSelected ? 0.4 : 1
           }).addTo(mapInstanceRef.current).bindPopup(popupContent);
 
-          const label = L.marker([city.lat, city.lng], { icon, zIndexOffset: isCurrent ? 1000 : isSelected ? 500 : 0 })
+          const label = L.marker([city.lat, city.lng], { icon, zIndexOffset: isSelected ? 500 : 0 })
             .addTo(mapInstanceRef.current);
 
           layersRef.current.push(dot);
