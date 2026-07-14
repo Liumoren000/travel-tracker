@@ -171,6 +171,8 @@ body {
   border: 2px solid rgba(255, 255, 255, 0.8);
   text-align: center;
   min-width: 30px;
+  pointer-events: none;
+  user-select: none;
 }
 
 .marker-dot {

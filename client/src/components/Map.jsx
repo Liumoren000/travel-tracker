@@ -10,23 +10,18 @@ import { getWeather, formatWeatherHTML } from '../services/weather';
 import { generateAllFlightLinks } from '../utils/flightLinks';
 import ShareModal from './ShareModal';
 
-// 城市名标签可见的最小缩放级别（小于此级别只显示圆点，避免重叠）
-const LABEL_MIN_ZOOM = 6;
+// 标签碰撞检测的最小间距（像素）
+const LABEL_GAP = 4;
 
-const buildMarkerIcon = (city, bgColor, borderColor, showLabel, isOtherSelected, isCurrent) => {
-  const innerClass = showLabel
-    ? `marker-label${isCurrent ? ' marker-current' : ''}`
-    : `marker-dot${isCurrent ? ' marker-current' : ''}`;
-  const innerHTML = showLabel
-    ? `${city.name || '未知'}`
-    : '';
-  const labelHTML = `<div class="${innerClass}" style="background:${bgColor};border-color:${borderColor};opacity:${isOtherSelected ? 0.4 : 1}">${innerHTML}</div>`;
+const buildMarkerIcon = (city, bgColor, borderColor, isOtherSelected, isCurrent) => {
+  const innerClass = `marker-label${isCurrent ? ' marker-current' : ''}`;
+  const labelHTML = `<div class="${innerClass}" style="background:${bgColor};border-color:${borderColor};opacity:${isOtherSelected ? 0.4 : 1}">${city.name || '未知'}</div>`;
 
   return L.divIcon({
     className: 'custom-marker',
     html: labelHTML,
-    iconSize: showLabel ? [60, 24] : [10, 10],
-    iconAnchor: showLabel ? [30, 12] : [5, 5]
+    iconSize: [1, 1],
+    iconAnchor: [0, 0]
   });
 };
 
@@ -114,7 +109,7 @@ const Map = forwardRef(({
     }).addTo(mapInstanceRef.current);
 
     mapInstanceRef.current.on('zoomend', () => {
-      updateMarkerIcons();
+      requestAnimationFrame(() => resolveLabelOverlaps());
     });
 
     // 监听容器大小变化，更新地图
@@ -176,21 +171,78 @@ const Map = forwardRef(({
     };
   }, [onCityClick]);
 
-  // 根据当前缩放级别更新所有城市标签的显示状态
-  const updateMarkerIcons = () => {
-    if (!mapInstanceRef.current) return;
-    const currentZoom = mapInstanceRef.current.getZoom();
-    const showLabel = currentZoom >= LABEL_MIN_ZOOM;
-    markersDataRef.current.forEach((data) => {
-      const icon = buildMarkerIcon(
-        data.city,
-        data.bgColor,
-        data.borderColor,
-        showLabel,
-        data.isOtherSelected,
-        data.isCurrent
-      );
-      data.marker.setIcon(icon);
+  // 测量所有标签的尺寸并按"先尝试8个方向、避让其他标签"的方式重新定位，
+  // 避免标签相互重叠，同时保证每个标签尽量靠近其城市点
+  const resolveLabelOverlaps = () => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+    const items = markersDataRef.current;
+    if (items.length === 0) return;
+
+    if (items.length === 1) {
+      if (items[0].label && items[0].geoPos) {
+        items[0].label.setLatLng(items[0].geoPos);
+      }
+      return;
+    }
+
+    const DOT_R = 5;
+    const placed = [];
+
+    items.forEach((data) => {
+      const el = data.label && data.label.getElement();
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const w = rect.width;
+      const h = rect.height;
+      const dotPixel = map.latLngToContainerPoint(data.geoPos);
+      const dotX = dotPixel.x;
+      const dotY = dotPixel.y;
+
+      const offsets = [
+        { x: dotX + DOT_R + LABEL_GAP, y: dotY - h / 2 },
+        { x: dotX - DOT_R - LABEL_GAP - w, y: dotY - h / 2 },
+        { x: dotX - w / 2, y: dotY + DOT_R + LABEL_GAP },
+        { x: dotX - w / 2, y: dotY - DOT_R - LABEL_GAP - h },
+        { x: dotX + DOT_R + LABEL_GAP, y: dotY + DOT_R + LABEL_GAP },
+        { x: dotX - DOT_R - LABEL_GAP - w, y: dotY + DOT_R + LABEL_GAP },
+        { x: dotX + DOT_R + LABEL_GAP, y: dotY - DOT_R - LABEL_GAP - h },
+        { x: dotX - DOT_R - LABEL_GAP - w, y: dotY - DOT_R - LABEL_GAP - h }
+      ];
+
+      let chosen = null;
+      for (const off of offsets) {
+        const collides = placed.some((p) =>
+          off.x < p.x + p.w + LABEL_GAP &&
+          off.x + w + LABEL_GAP > p.x &&
+          off.y < p.y + p.h + LABEL_GAP &&
+          off.y + h + LABEL_GAP > p.y
+        );
+        if (!collides) {
+          chosen = off;
+          break;
+        }
+      }
+
+      if (!chosen) {
+        let minOverlap = Infinity;
+        for (const off of offsets) {
+          let overlap = 0;
+          for (const p of placed) {
+            const ox = Math.max(0, Math.min(off.x + w, p.x + p.w) - Math.max(off.x, p.x));
+            const oy = Math.max(0, Math.min(off.y + h, p.y + p.h) - Math.max(off.y, p.y));
+            overlap += ox * oy;
+          }
+          if (overlap < minOverlap) {
+            minOverlap = overlap;
+            chosen = off;
+          }
+        }
+      }
+
+      placed.push({ x: chosen.x, y: chosen.y, w, h });
+      const newLatLng = map.containerPointToLatLng([chosen.x, chosen.y]);
+      data.label.setLatLng(newLatLng);
     });
   };
 
@@ -223,9 +275,7 @@ const Map = forwardRef(({
           if (isFirst) borderColor = '#52c41a';
           if (isLast) borderColor = '#f5222d';
 
-          const currentZoom = mapInstanceRef.current.getZoom();
-          const showLabel = currentZoom >= LABEL_MIN_ZOOM;
-          const icon = buildMarkerIcon(city, color, borderColor, showLabel, isOtherSelected, false);
+          const icon = buildMarkerIcon(city, color, borderColor, isOtherSelected, false);
 
           const citiesList = route.cities.map((c, i) => 
             `<div style="padding:3px 0;font-size:12px;${i === index ? 'font-weight:bold;color:' + color : ''}">
@@ -247,14 +297,25 @@ const Map = forwardRef(({
             </div>
           `;
 
-          const marker = L.marker([city.lat, city.lng], { icon })
-            .addTo(mapInstanceRef.current)
-            .bindPopup(popupContent);
+          const dot = L.circleMarker([city.lat, city.lng], {
+            radius: 5,
+            fillColor: color,
+            color: borderColor,
+            weight: 2,
+            opacity: isOtherSelected ? 0.4 : 1,
+            fillOpacity: isOtherSelected ? 0.4 : 1
+          }).addTo(mapInstanceRef.current).bindPopup(popupContent);
 
-          layersRef.current.push(marker);
+          const label = L.marker([city.lat, city.lng], { icon, zIndexOffset: isCurrent ? 1000 : isSelected ? 500 : 0 })
+            .addTo(mapInstanceRef.current);
+
+          layersRef.current.push(dot);
+          layersRef.current.push(label);
           markersDataRef.current.push({
-            marker,
+            label,
+            dot,
             city,
+            geoPos: [city.lat, city.lng],
             bgColor: color,
             borderColor,
             isOtherSelected,
@@ -461,9 +522,7 @@ const Map = forwardRef(({
         if (isFirst) borderColor = '#52c41a';
         if (isLast) borderColor = '#f5222d';
 
-        const currentZoom = mapInstanceRef.current.getZoom();
-        const showLabel = currentZoom >= LABEL_MIN_ZOOM;
-        const icon = buildMarkerIcon(city, '#1890ff', borderColor, showLabel, false, true);
+        const icon = buildMarkerIcon(city, '#1890ff', borderColor, false, true);
 
         const citiesList = currentRoute.cities.map((c, i) => 
           `<div style="padding:3px 0;font-size:12px;${i === index ? 'font-weight:bold;color:#1890ff' : ''}">
@@ -483,11 +542,16 @@ const Map = forwardRef(({
           </div>
         `;
 
-        const marker = L.marker([city.lat, city.lng], { icon })
-          .addTo(mapInstanceRef.current)
-          .bindPopup(popupContent);
+        const dot = L.circleMarker([city.lat, city.lng], {
+          radius: 5,
+          fillColor: '#1890ff',
+          color: borderColor,
+          weight: 2,
+          opacity: 1,
+          fillOpacity: 1
+        }).addTo(mapInstanceRef.current).bindPopup(popupContent);
 
-        marker.on('popupopen', () => {
+        dot.on('popupopen', () => {
           setTimeout(() => {
             const btn = document.querySelector('.popup-delete-btn');
             if (btn) {
@@ -502,10 +566,16 @@ const Map = forwardRef(({
           }, 10);
         });
 
-        layersRef.current.push(marker);
+        const label = L.marker([city.lat, city.lng], { icon, zIndexOffset: 1000 })
+          .addTo(mapInstanceRef.current);
+
+        layersRef.current.push(dot);
+        layersRef.current.push(label);
         markersDataRef.current.push({
-          marker,
+          label,
+          dot,
           city,
+          geoPos: [city.lat, city.lng],
           bgColor: '#1890ff',
           borderColor,
           isOtherSelected: false,
@@ -625,7 +695,7 @@ const Map = forwardRef(({
       mapInstanceRef.current.fitBounds(bounds, { padding: [50, 50] });
     }
 
-    updateMarkerIcons();
+    requestAnimationFrame(() => resolveLabelOverlaps());
   }, [routes, currentRoute, selectedRouteIndex, onDeleteCity]);
 
   const handleExport = async () => {
