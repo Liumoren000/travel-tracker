@@ -171,47 +171,37 @@ const Map = forwardRef(({
     };
   }, [onCityClick]);
 
-  // 给定标签尺寸，生成围绕其城市点的多个候选放置位置（角度 + 距离）
-  // 按"靠右 → 其他方向 → 更远距离"的顺序尝试
+  // 给定标签尺寸，生成围绕其城市点的多个候选放置位置（按 5 圈 × 8 方向）
   const buildAnchorOffsets = (dotX, dotY, w, h, mapW, mapH) => {
     const DOT_R = 5;
     const PAD = 2;
     const baseDistance = DOT_R + LABEL_GAP;
     const list = [];
 
-    for (let ring = 0; ring < 3; ring++) {
-      const dist = baseDistance + ring * 4;
+    for (let ring = 0; ring < 5; ring++) {
+      const dist = baseDistance + ring * 12;
       const positions = [
-        { ax: 1, ay: 0, side: 'r' },
-        { ax: 0, ay: 1, side: 'b' },
-        { ax: -1, ay: 0, side: 'l' },
-        { ax: 0, ay: -1, side: 't' },
-        { ax: 1, ay: 1, side: 'br' },
-        { ax: -1, ay: 1, side: 'bl' },
-        { ax: 1, ay: -1, side: 'tr' },
-        { ax: -1, ay: -1, side: 'tl' }
+        { side: 'r', x: dotX + dist, y: dotY - h / 2 },
+        { side: 'b', x: dotX - w / 2, y: dotY + dist },
+        { side: 'l', x: dotX - dist - w, y: dotY - h / 2 },
+        { side: 't', x: dotX - w / 2, y: dotY - dist - h },
+        { side: 'br', x: dotX + dist, y: dotY + dist },
+        { side: 'bl', x: dotX - dist - w, y: dotY + dist },
+        { side: 'tr', x: dotX + dist, y: dotY - dist - h },
+        { side: 'tl', x: dotX - dist - w, y: dotY - dist - h }
       ];
-      positions.forEach(({ ax, ay, side }) => {
-        let x, y;
-        if (side === 'r') { x = dotX + dist; y = dotY - h / 2; }
-        else if (side === 'l') { x = dotX - dist - w; y = dotY - h / 2; }
-        else if (side === 'b') { x = dotX - w / 2; y = dotY + dist; }
-        else if (side === 't') { x = dotX - w / 2; y = dotY - dist - h; }
-        else if (side === 'br') { x = dotX + dist; y = dotY + dist; }
-        else if (side === 'bl') { x = dotX - dist - w; y = dotY + dist; }
-        else if (side === 'tr') { x = dotX + dist; y = dotY - dist - h; }
-        else if (side === 'tl') { x = dotX - dist - w; y = dotY - dist - h; }
+      positions.forEach(({ x, y }) => {
         const cx = x + w / 2;
         const cy = y + h / 2;
         if (cx < PAD || cy < PAD || cx > mapW - PAD || cy > mapH - PAD) return;
-        list.push({ x, y, dist: Math.hypot(cx - dotX, cy - dotY), ax, ay });
+        list.push({ x, y, dist: Math.hypot(cx - dotX, cy - dotY) });
       });
     }
     return list;
   };
 
-  // 测量所有标签的尺寸并按"先尝试多个候选位置、避让其他标签"的方式重新定位，
-  // 避免标签相互重叠且不出地图边界，同时保证每个标签尽量靠近其城市点
+  // 测量所有标签并按"评分函数"选择位置：评分 = 重叠面积×1000 + 离圆点距离
+  // 评分最低的候选胜出。配合 5 圈候选 + 引线，可保证所有城市名都可见
   const resolveLabelOverlaps = () => {
     const map = mapInstanceRef.current;
     if (!map) return;
@@ -221,6 +211,10 @@ const Map = forwardRef(({
     if (items.length === 1) {
       if (items[0].label && items[0].geoPos) {
         items[0].label.setLatLng(items[0].geoPos);
+      }
+      if (items[0].leaderLine) {
+        items[0].leaderLine.remove();
+        items[0].leaderLine = null;
       }
       return;
     }
@@ -249,31 +243,22 @@ const Map = forwardRef(({
 
       const anchors = buildAnchorOffsets(dotX, dotY, w, h, mapW, mapH);
 
-      const collides = (off) => placed.some((p) =>
-        off.x < p.x + p.w + LABEL_GAP &&
-        off.x + w + LABEL_GAP > p.x &&
-        off.y < p.y + p.h + LABEL_GAP &&
-        off.y + h + LABEL_GAP > p.y
-      );
-
-      let chosen = anchors.find((off) => !collides(off));
-
-      if (!chosen) {
-        let minScore = Infinity;
-        for (const off of anchors) {
-          let overlap = 0;
-          for (const p of placed) {
-            const ox = Math.max(0, Math.min(off.x + w, p.x + p.w) - Math.max(off.x, p.x));
-            const oy = Math.max(0, Math.min(off.y + h, p.y + p.h) - Math.max(off.y, p.y));
-            overlap += ox * oy;
-          }
-          const score = overlap * 100 + off.dist;
-          if (score < minScore) {
-            minScore = score;
-            chosen = off;
-          }
+      let chosen = null;
+      let bestScore = Infinity;
+      anchors.forEach((off) => {
+        let overlap = 0;
+        for (const p of placed) {
+          const ox = Math.max(0, Math.min(off.x + w, p.x + p.w) - Math.max(off.x, p.x));
+          const oy = Math.max(0, Math.min(off.y + h, p.y + p.h) - Math.max(off.y, p.y));
+          overlap += ox * oy;
         }
-      }
+        const distFromDot = Math.hypot(off.x + w / 2 - dotX, off.y + h / 2 - dotY);
+        const score = overlap * 1000 + distFromDot;
+        if (score < bestScore) {
+          bestScore = score;
+          chosen = off;
+        }
+      });
 
       if (!chosen) {
         chosen = { x: dotX - w / 2, y: dotY - h / 2, dist: 0 };
@@ -285,6 +270,33 @@ const Map = forwardRef(({
       placed.push({ x: finalX, y: finalY, w, h });
       const newLatLng = map.containerPointToLatLng([finalX, finalY]);
       data.label.setLatLng(newLatLng);
+
+      // 引线：当标签中心离圆点 > 22 像素时画一条虚线连回圆点
+      const labelCenterX = finalX + w / 2;
+      const labelCenterY = finalY + h / 2;
+      const dist = Math.hypot(labelCenterX - dotX, labelCenterY - dotY);
+      if (dist > 22) {
+        const nearestX = Math.max(finalX, Math.min(dotX, finalX + w));
+        const nearestY = Math.max(finalY, Math.min(dotY, finalY + h));
+        const nearestLatLng = map.containerPointToLatLng([nearestX, nearestY]);
+        if (!data.leaderLine) {
+          data.leaderLine = L.polyline([data.geoPos, nearestLatLng], {
+            color: data.bgColor,
+            weight: 1.2,
+            opacity: 0.7,
+            dashArray: '2, 3',
+            interactive: false
+          }).addTo(map);
+          layersRef.current.push(data.leaderLine);
+        } else {
+          data.leaderLine.setLatLngs([data.geoPos, nearestLatLng]);
+          data.leaderLine.setStyle({ color: data.bgColor });
+        }
+      } else if (data.leaderLine) {
+        data.leaderLine.remove();
+        layersRef.current = layersRef.current.filter((l) => l !== data.leaderLine);
+        data.leaderLine = null;
+      }
     });
   };
 
