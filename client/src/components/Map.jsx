@@ -634,6 +634,7 @@ const Map = forwardRef(({
         });
 
         const isFirstLabel = city.name && !seenLabelNames.has(city.name);
+        layersRef.current.push(dot);
         if (isFirstLabel) {
           const label = L.marker([city.lat, city.lng], { icon, zIndexOffset: 1000 })
             .addTo(mapInstanceRef.current);
